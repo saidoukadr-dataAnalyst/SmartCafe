@@ -11,6 +11,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSetupMode, setIsSetupMode] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
     const savedPassword = localStorage.getItem('app_password');
@@ -23,12 +24,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
   const handleKeyPress = (num: string) => {
     setError('');
-    if (isSetupMode) {
-      if (confirmPassword !== '') {
-        setConfirmPassword(prev => prev + num);
-      } else {
-        setPassword(prev => prev + num);
-      }
+    if (isSetupMode && isConfirming) {
+      setConfirmPassword(prev => prev + num);
     } else {
       setPassword(prev => prev + num);
     }
@@ -36,12 +33,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
   const handleClear = () => {
     setError('');
-    if (isSetupMode) {
-      if (confirmPassword !== '') {
-        setConfirmPassword('');
-      } else {
-        setPassword('');
-      }
+    if (isSetupMode && isConfirming) {
+      setConfirmPassword('');
     } else {
       setPassword('');
     }
@@ -52,29 +45,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setError('');
 
     if (isSetupMode) {
-      if (password.length < 4) {
-        setError('Le mot de passe doit contenir au moins 4 caractères.');
-        return;
-      }
-      if (confirmPassword === '') {
-        // Move to confirm stage
-        if (password) {
-          setError('Veuillez confirmer le mot de passe.');
-        } else {
-          setError('Veuillez saisir un mot de passe.');
+      if (!isConfirming) {
+        if (password.length < 4) {
+          setError('Le mot de passe doit contenir au moins 4 caractères.');
+          return;
         }
-        return;
+        setIsConfirming(true);
+      } else {
+        if (password !== confirmPassword) {
+          setError('Les mots de passe ne correspondent pas. Veuillez recommencer.');
+          setPassword('');
+          setConfirmPassword('');
+          setIsConfirming(false);
+          return;
+        }
+        // Save password
+        localStorage.setItem('app_password', password);
+        sessionStorage.setItem('app_authenticated', 'true');
+        onLoginSuccess();
       }
-      if (password !== confirmPassword) {
-        setError('Les mots de passe ne correspondent pas. Recommencez.');
-        setPassword('');
-        setConfirmPassword('');
-        return;
-      }
-      // Save password
-      localStorage.setItem('app_password', password);
-      sessionStorage.setItem('app_authenticated', 'true');
-      onLoginSuccess();
     } else {
       const savedPassword = localStorage.getItem('app_password');
       if (password === savedPassword) {
@@ -99,12 +88,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
         <h2 className="login-title">
           {isSetupMode 
-            ? "Configuration de Sécurité" 
+            ? (isConfirming ? "Confirmation du code" : "Configuration de Sécurité") 
             : "Application Verrouillée"}
         </h2>
         <p className="login-subtitle">
           {isSetupMode 
-            ? "Définissez un mot de passe pour protéger vos données." 
+            ? (isConfirming ? "Saisissez à nouveau le code pour confirmer." : "Définissez un mot de passe pour protéger vos données.") 
             : "Veuillez saisir votre mot de passe pour accéder au tableau de bord."}
         </p>
 
@@ -120,22 +109,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <Lock size={20} className="login-input-icon" />
             <input
               type={showPassword ? "text" : "password"}
-              value={isSetupMode && password && confirmPassword === '' ? password : (isSetupMode ? confirmPassword : password)}
+              value={isConfirming ? confirmPassword : password}
               onChange={(e) => {
                 setError('');
-                if (isSetupMode) {
-                  if (confirmPassword !== '' || password.length >= 4) {
-                    setConfirmPassword(e.target.value);
-                  } else {
-                    setPassword(e.target.value);
-                  }
+                if (isConfirming) {
+                  setConfirmPassword(e.target.value);
                 } else {
                   setPassword(e.target.value);
                 }
               }}
               placeholder={
                 isSetupMode 
-                  ? (password === '' || confirmPassword === '' && password.length < 4 ? "Nouveau mot de passe" : "Confirmez le mot de passe")
+                  ? (isConfirming ? "Confirmez le mot de passe" : "Nouveau mot de passe")
                   : "Mot de passe"
               }
               className="login-input"
@@ -190,7 +175,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
           <button type="submit" className="btn btn-primary login-submit-btn">
             {isSetupMode 
-              ? (confirmPassword !== '' ? "Enregistrer & Se Connecter" : "Continuer") 
+              ? (isConfirming ? "Enregistrer & Se Connecter" : "Continuer") 
               : "Se Connecter"}
           </button>
         </form>
