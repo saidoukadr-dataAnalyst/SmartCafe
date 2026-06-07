@@ -182,37 +182,49 @@
     </div>
 
     <h1>Générateur de Licence</h1>
-    <p>Saisissez le code appareil unique envoyé par votre client pour calculer sa clé d'activation SmartCafe.</p>
+    <p>Saisissez le code appareil unique envoyé par votre client pour calculer sa clé d'activation ou son code de récupération PIN.</p>
 
     <div class="form-group">
       <label for="deviceId">Code Appareil Client (ID)</label>
       <input type="text" id="deviceId" placeholder="HW-XXXX-XXXX-XXXX" maxlength="20" autocomplete="off">
     </div>
 
-    <button onclick="generateKey()">Calculer la Clé d'Activation</button>
+    <div style="display: flex; gap: 1rem;">
+      <button onclick="generateKey('activation')" style="flex: 1;">Clé d'Activation</button>
+      <button onclick="generateKey('recovery')" style="flex: 1; background-color: var(--border-color); color: var(--text-primary);">Code Récupération</button>
+    </div>
 
     <div class="result-box" id="resultBox">
-      <div class="result-title">Clé d'Activation Générée</div>
+      <div class="result-title" id="resultTitle">Clé d'Activation Générée</div>
       <div class="key-display" id="resultKey">KEY-0000-0000</div>
       <button class="copy-btn" id="copyBtn" onclick="copyKey()">
         <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
         </svg>
-        <span id="copyText">Copier la Clé</span>
+        <span id="copyText">Copier le Code</span>
       </button>
     </div>
   </div>
 
   <script>
-    function generateKey() {
+    function generateKey(type) {
       const devId = document.getElementById('deviceId').value.trim().toUpperCase();
       if (!devId) {
         alert("Veuillez saisir un code appareil valide.");
         return;
       }
       
-      const salt = "SmartCafe2026ActivationSaltKey!";
+      let salt = "SmartCafe2026ActivationSaltKey!";
+      let prefix = "KEY-";
+      let title = "Clé d'Activation Générée";
+      
+      if (type === 'recovery') {
+        salt = "SmartCafe2026MasterRecoverySaltKey!";
+        prefix = "REC-";
+        title = "Code de Récupération Généré";
+      }
+      
       const combined = devId + salt;
       
       // Cryptographic Polynomial Hash (same as in React code)
@@ -222,21 +234,22 @@
       }
       
       const hex = hash.toString(16).toUpperCase().padStart(8, '0');
-      const activationKey = `KEY-${hex.slice(0, 4)}-${hex.slice(4, 8)}`;
+      const finalKey = `${prefix}${hex.slice(0, 4)}-${hex.slice(4, 8)}`;
       
-      document.getElementById('resultKey').innerText = activationKey;
+      document.getElementById('resultTitle').innerText = title;
+      document.getElementById('resultKey').innerText = finalKey;
       document.getElementById('resultBox').style.display = 'block';
       
       // Reset copy button
-      document.getElementById('copyText').innerText = "Copier la Clé";
+      document.getElementById('copyText').innerText = "Copier le Code";
     }
 
     function copyKey() {
       const keyText = document.getElementById('resultKey').innerText;
       navigator.clipboard.writeText(keyText).then(() => {
-        document.getElementById('copyText').innerText = "Clé Copiée !";
+        document.getElementById('copyText').innerText = "Code Copié !";
         setTimeout(() => {
-          document.getElementById('copyText').innerText = "Copier la Clé";
+          document.getElementById('copyText').innerText = "Copier le Code";
         }, 2000);
       });
     }
