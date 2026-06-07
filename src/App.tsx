@@ -9,12 +9,20 @@ import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
 import { Menu, Coffee } from 'lucide-react';
 import LoginScreen from './components/LoginScreen';
+import ActivationScreen from './components/ActivationScreen';
 
 const App: React.FC = () => {
+  const [isActivated, setIsActivated] = useState(() => {
+    return localStorage.getItem('app_activated') === 'true';
+  });
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem('app_authenticated') === 'true';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  if (!isActivated) {
+    return <ActivationScreen onActivationSuccess={() => setIsActivated(true)} />;
+  }
 
   if (!isAuthenticated) {
     return <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />;
