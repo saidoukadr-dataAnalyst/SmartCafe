@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">CafeManager</string>
-    <string name="title_activity_main">CafeManager</string>
+    <string name="app_name">SmartCafe</string>
+    <string name="title_activity_main">SmartCafe</string>
     <string name="package_name">com.cafemanager.app</string>
     <string name="custom_url_scheme">com.cafemanager.app</string>
 </resources>
