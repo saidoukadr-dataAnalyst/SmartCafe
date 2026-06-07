@@ -7,7 +7,7 @@ import Income from './pages/Income';
 import Staff from './pages/Staff';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
-import { Menu } from 'lucide-react';
+import { Menu, Coffee } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -15,15 +15,21 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="app-container">
-        {/* Toggle Button for Sidebar */}
-        <button 
-          className="menu-toggle-btn"
-          onClick={() => setIsSidebarOpen(true)}
-          aria-label="Ouvrir le menu"
-          title="Ouvrir le menu"
-        >
-          <Menu size={24} />
-        </button>
+        {/* Top Header Bar */}
+        <header className="app-header">
+          <button 
+            className="menu-toggle-btn"
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Ouvrir le menu"
+            title="Ouvrir le menu"
+          >
+            <Menu size={24} />
+          </button>
+          <div className="header-brand">
+            <Coffee className="header-logo" size={22} />
+            <span className="header-title">SmartCafe</span>
+          </div>
+        </header>
 
         {/* Sidebar backdrop overlay */}
         {isSidebarOpen && (
