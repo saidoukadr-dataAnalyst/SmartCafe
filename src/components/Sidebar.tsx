@@ -1,8 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon, X } from 'lucide-react';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const [theme, setTheme] = React.useState<'light' | 'dark'>(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light' || savedTheme === 'dark') {
@@ -28,33 +33,50 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-header">
-        <LayoutDashboard size={24} />
-        <span>CaféManager</span>
+    <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <LayoutDashboard size={24} />
+          <span>SmartCafe</span>
+        </div>
+        <button 
+          onClick={onClose} 
+          style={{ 
+            background: 'none', 
+            border: 'none', 
+            color: 'var(--text-sidebar)', 
+            cursor: 'pointer', 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '0.25rem' 
+          }}
+          title="Fermer le menu"
+        >
+          <X size={20} />
+        </button>
       </div>
       <nav className="sidebar-nav">
-        <NavLink to="/" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} end>
+        <NavLink to="/" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose} end>
           <LayoutDashboard size={20} />
           <span>Tableau de Bord</span>
         </NavLink>
-        <NavLink to="/suppliers" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+        <NavLink to="/suppliers" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
           <ShoppingCart size={20} />
           <span>Fournisseurs</span>
         </NavLink>
-        <NavLink to="/income" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+        <NavLink to="/income" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
           <Wallet size={20} />
           <span>Revenus</span>
         </NavLink>
-        <NavLink to="/staff" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+        <NavLink to="/staff" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
           <Users size={20} />
           <span>Personnel</span>
         </NavLink>
-        <NavLink to="/expenses" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+        <NavLink to="/expenses" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
           <Banknote size={20} />
           <span>Frais Fixes</span>
         </NavLink>
-        <NavLink to="/reports" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+        <NavLink to="/reports" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
           <FileText size={20} />
           <span>Rapport Mensuel</span>
         </NavLink>
