@@ -8,9 +8,17 @@ import Staff from './pages/Staff';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
 import { Menu, Coffee } from 'lucide-react';
+import LoginScreen from './components/LoginScreen';
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem('app_authenticated') === 'true';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  if (!isAuthenticated) {
+    return <LoginScreen onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <Router>

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon, X } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon, X, Lock, LogOut } from 'lucide-react';
+import ChangePasswordModal from './ChangePasswordModal';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -8,7 +9,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const [theme, setTheme] = React.useState<'light' | 'dark'>(() => {
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light' || savedTheme === 'dark') {
       return savedTheme;
@@ -30,6 +32,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('app_authenticated');
+    window.location.reload();
   };
 
   return (
@@ -80,6 +87,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <FileText size={20} />
           <span>Rapport Mensuel</span>
         </NavLink>
+        <button 
+          onClick={() => {
+            setIsPasswordModalOpen(true);
+            onClose();
+          }}
+          className="nav-item"
+          style={{ 
+            background: 'none', 
+            border: 'none', 
+            width: '100%', 
+            textAlign: 'left', 
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 'inherit'
+          }}
+        >
+          <Lock size={20} />
+          <span>Sécurité</span>
+        </button>
       </nav>
       <div className="sidebar-footer" style={{ padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
         <button 
@@ -98,7 +124,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           <span>{theme === 'dark' ? 'Mode Clair' : 'Mode Sombre'}</span>
         </button>
+        <button 
+          onClick={handleLogout} 
+          className="btn btn-outline" 
+          style={{ 
+            width: '100%', 
+            justifyContent: 'center', 
+            gap: '0.75rem', 
+            color: '#ef4444', 
+            borderColor: 'rgba(239, 68, 68, 0.2)',
+            backgroundColor: 'rgba(239, 68, 68, 0.05)',
+            cursor: 'pointer',
+            marginTop: '0.75rem'
+          }}
+        >
+          <LogOut size={18} />
+          <span>Verrouiller</span>
+        </button>
       </div>
+
+      <ChangePasswordModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)} 
+      />
     </div>
   );
 };
