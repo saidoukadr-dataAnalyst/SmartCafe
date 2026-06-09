@@ -158,6 +158,7 @@ const Expenses: React.FC = () => {
               <label className="form-label">Montant (DH)</label>
               <input 
                 type="number" 
+                inputMode="decimal"
                 className="form-input" 
                 placeholder="Ex: 500" 
                 value={newAmount}

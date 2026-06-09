@@ -159,6 +159,7 @@ const Staff: React.FC = () => {
               <label className="form-label">Salaire Hebdomadaire (DH)</label>
               <input 
                 type="number" 
+                inputMode="decimal"
                 className="form-input" 
                 placeholder="Ex: 1500" 
                 value={newSalary}

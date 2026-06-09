@@ -535,6 +535,8 @@ body {
   animation: modalIn 0.3s ease-out;
   margin: auto 0;
   flex-shrink: 0;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 @keyframes modalIn {
@@ -924,7 +926,7 @@ body {
   margin-top: 0.5rem;
 }
 
-/* Force Table container to edge on mobile */
+/* Force Table container to edge on mobile and optimize touch targets */
 @media (max-width: 768px) {
   .table-container {
     width: 100vw;
@@ -933,5 +935,13 @@ body {
     border-radius: 0;
     border-left: none;
     border-right: none;
+  }
+  
+  .btn, .form-input {
+    min-height: 44px;
+  }
+  
+  .modal-content {
+    padding: 1.25rem;
   }
 }

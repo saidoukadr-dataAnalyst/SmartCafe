@@ -289,7 +289,7 @@ const Suppliers: React.FC = () => {
     const doc = new jsPDF();
     let hasPages = false;
 
-    suppliers.forEach((supplier, index) => {
+    suppliers.forEach((supplier) => {
       const supplierDeliveries = getDeliveriesForSupplier(supplier.id);
       if (supplierDeliveries.length === 0 && supplier.totalOwed === 0) return;
 
@@ -878,6 +878,7 @@ const Suppliers: React.FC = () => {
                   <label className="form-label">Quantité</label>
                   <input 
                     type="number" 
+                    inputMode="decimal"
                     className="form-input" 
                     placeholder="Ex: 10"
                     min="1"
@@ -890,6 +891,7 @@ const Suppliers: React.FC = () => {
                   <label className="form-label">Prix Total (DH)</label>
                   <input 
                     type="number" 
+                    inputMode="decimal"
                     className="form-input" 
                     placeholder="Ex: 50"
                     min="0"

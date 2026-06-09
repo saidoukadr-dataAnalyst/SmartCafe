@@ -32,6 +32,7 @@ const yearlyDataRaw = [
 
 const Reports: React.FC = () => {
   const [reportData, setReportData] = React.useState(yearlyDataRaw);
+  const [weeklyDataState, setWeeklyDataState] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     const currentMonthStr = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
@@ -86,6 +87,47 @@ const Reports: React.FC = () => {
       Personnel: savedPayroll ? totalPersonnel : newData[lastIdx].Personnel
     };
     setReportData(newData);
+
+    // --- Weekly Aggregation ---
+    const weeklyMap = new Map<string, { name: string, Revenu: number, Fournisseurs: number, Personnel: number, sortKey: string }>();
+
+    const addToWeek = (dateStr: string, type: 'Revenu' | 'Fournisseurs' | 'Personnel', amount: number) => {
+      if (!dateStr || isNaN(new Date(dateStr).getTime())) return;
+      const d = new Date(dateStr);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d);
+      monday.setDate(diff);
+      
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const sortKey = `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
+      
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const name = `Du ${pad(monday.getDate())}/${pad(monday.getMonth() + 1)} au ${pad(sunday.getDate())}/${pad(sunday.getMonth() + 1)}`;
+      
+      if (!weeklyMap.has(sortKey)) {
+        weeklyMap.set(sortKey, { name, Revenu: 0, Fournisseurs: 0, Personnel: 0, sortKey });
+      }
+      weeklyMap.get(sortKey)![type] += amount;
+    };
+
+    if (savedIncomes) {
+      JSON.parse(savedIncomes).forEach((i: any) => addToWeek(i.date, 'Revenu', Number(i.amount) || 0));
+    }
+    allDeliveries.forEach((d: any) => addToWeek(d.date, 'Fournisseurs', Number(d.totalPrice) || 0));
+    if (savedPayroll) {
+      JSON.parse(savedPayroll).forEach((p: any) => addToWeek(p.date, 'Personnel', Number(p.amount) || 0));
+    }
+
+    const sortedWeeks = Array.from(weeklyMap.values())
+      .sort((a, b) => b.sortKey.localeCompare(a.sortKey)) // Descending
+      .map(w => ({
+        ...w,
+        BeneficeNet: w.Revenu - (w.Fournisseurs + w.Personnel)
+      }));
+      
+    setWeeklyDataState(sortedWeeks);
   }, []);
 
   const yearlyData = reportData.map(data => ({
@@ -114,6 +156,42 @@ const Reports: React.FC = () => {
     doc.text(`- Bénéfice Net : ${profitCurrent} DH`, 30, 115);
     
     exportPDF(doc, `Rapport_Mensuel_${currentMonth.name}.pdf`);
+  };
+
+  const handleExportWeekly = () => {
+    if (weeklyDataState.length === 0) {
+      alert("Aucune donnée hebdomadaire disponible.");
+      return;
+    }
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text(`Historique Hebdomadaire`, 20, 20);
+    doc.setFontSize(14);
+    doc.text(`Édité le : ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
+    
+    let yOffset = 50;
+    doc.setFontSize(12);
+    
+    weeklyDataState.forEach((week) => {
+      if (yOffset > 270) {
+        doc.addPage();
+        yOffset = 20;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Semaine : ${week.name}`, 20, yOffset);
+      doc.setFont('helvetica', 'normal');
+      yOffset += 8;
+      doc.text(`- Revenus : ${week.Revenu} DH`, 30, yOffset);
+      yOffset += 8;
+      doc.text(`- Dépenses Fournisseurs : ${week.Fournisseurs} DH`, 30, yOffset);
+      yOffset += 8;
+      doc.text(`- Salaires Personnel : ${week.Personnel} DH`, 30, yOffset);
+      yOffset += 8;
+      doc.text(`- Bénéfice Net : ${week.BeneficeNet} DH`, 30, yOffset);
+      yOffset += 15;
+    });
+
+    exportPDF(doc, `Historique_Hebdomadaire.pdf`);
   };
 
   return (
@@ -213,6 +291,51 @@ const Reports: React.FC = () => {
                 </tr>
               );
             })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="page-header" style={{ marginTop: '3rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>
+          Historique Hebdomadaire
+        </h2>
+        <button className="btn btn-outline" onClick={handleExportWeekly}>
+          <Download size={18} /> Exporter Historique Semaines
+        </button>
+      </div>
+
+      <div className="table-container" style={{ marginTop: '1.5rem' }}>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Semaine</th>
+              <th>Revenus</th>
+              <th>Fournisseurs</th>
+              <th>Personnel</th>
+              <th>Bénéfice Net</th>
+            </tr>
+          </thead>
+          <tbody>
+            {weeklyDataState.length > 0 ? weeklyDataState.map((week, idx) => {
+              const isPositive = week.BeneficeNet >= 0;
+              return (
+                <tr key={idx}>
+                  <td><strong>{week.name}</strong></td>
+                  <td style={{ color: 'var(--success)' }}>{week.Revenu} DH</td>
+                  <td>{week.Fournisseurs} DH</td>
+                  <td>{week.Personnel} DH</td>
+                  <td style={{ color: isPositive ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold' }}>
+                    {isPositive ? `+${week.BeneficeNet}` : week.BeneficeNet} DH
+                  </td>
+                </tr>
+              );
+            }) : (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  Aucune donnée hebdomadaire enregistrée.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

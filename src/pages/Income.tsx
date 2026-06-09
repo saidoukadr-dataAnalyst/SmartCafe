@@ -89,6 +89,7 @@ const Income: React.FC = () => {
               <label className="form-label">Saisir / Modifier le montant (DH)</label>
               <input 
                 type="number" 
+                inputMode="decimal"
                 className="form-input" 
                 placeholder="Ex: 850" 
                 value={amount}
