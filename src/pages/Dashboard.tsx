@@ -167,7 +167,6 @@ const Dashboard: React.FC = () => {
 
   const handleExport = () => {
     const doc = new jsPDF();
-    const monday = getMondayOfWeek();
     doc.setFontSize(20);
     doc.text(`Rapport Hebdomadaire Global ${getWeekRange()}`, 20, 20);
     doc.setFontSize(14);
