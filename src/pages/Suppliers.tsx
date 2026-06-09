@@ -330,9 +330,16 @@ const Suppliers: React.FC = () => {
       });
     });
 
-    if (hasPages) {
-      exportPDF(doc, `Toutes_Factures_Cloture_${weekRangeFilename}.pdf`);
+    if (!hasPages) {
+      doc.setFontSize(20);
+      doc.text(`Facture / Rapport Hebdomadaire`, 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Période : Semaine du ${weekRangeStr}`, 20, 28);
+      doc.setFontSize(14);
+      doc.text(`Aucune livraison et aucune dette pour cette semaine.`, 20, 50);
     }
+
+    exportPDF(doc, `Toutes_Factures_Cloture_${weekRangeFilename}.pdf`);
     
     // Archiver les livraisons
     setArchivedDeliveries(prev => [...prev, ...deliveries]);

@@ -929,7 +929,8 @@ body {
 /* Force Table container to edge on mobile and optimize touch targets */
 @media (max-width: 768px) {
   .table-container {
-    width: 100vw;
+    width: calc(100% + 2rem);
+    max-width: calc(100% + 2rem);
     margin-left: -1rem;
     margin-right: -1rem;
     border-radius: 0;

@@ -26,8 +26,24 @@ export const exportPDF = async (doc: jsPDF, filename: string) => {
         dialogTitle: 'Partager le PDF avec',
       });
     } else {
-      // Fallback for Web / Desktop (Electron handles its own via main.cjs will-download)
-      doc.save(filename);
+      // Fallback for Web / Desktop
+      try {
+        const blob = doc.output('blob');
+        const file = new File([blob], filename, { type: 'application/pdf' });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Facture / Rapport SmartCafe',
+            text: `Veuillez trouver ci-joint le document : ${filename}`
+          });
+        } else {
+          doc.save(filename);
+        }
+      } catch (err) {
+        console.log('Partage web non supporté ou annulé, téléchargement classique...', err);
+        doc.save(filename);
+      }
     }
   } catch (error) {
     console.error('Erreur lors de la génération du PDF :', error);
