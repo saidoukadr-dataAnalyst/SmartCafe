@@ -286,11 +286,18 @@ const Suppliers: React.FC = () => {
     const weekRangeStr = `${formatWeekDate(monday)} au ${formatWeekDate(sunday)}`;
     const weekRangeFilename = `${formatWeekDate(monday)}_au_${formatWeekDate(sunday)}`;
 
-    suppliers.forEach(supplier => {
+    const doc = new jsPDF();
+    let hasPages = false;
+
+    suppliers.forEach((supplier, index) => {
       const supplierDeliveries = getDeliveriesForSupplier(supplier.id);
       if (supplierDeliveries.length === 0 && supplier.totalOwed === 0) return;
 
-      const doc = new jsPDF();
+      if (hasPages) {
+        doc.addPage();
+      }
+      hasPages = true;
+
       doc.setFontSize(20);
       doc.text(`Facture / Rapport Hebdomadaire`, 20, 20);
       doc.setFontSize(12);
@@ -321,9 +328,11 @@ const Suppliers: React.FC = () => {
         doc.text(`${d.totalPrice} DH`, 150, yOffset);
         yOffset += 10;
       });
-      
-      exportPDF(doc, `Facture_${supplier.name.replace(/\s+/g, '_')}_Semaine_${weekRangeFilename}.pdf`);
     });
+
+    if (hasPages) {
+      exportPDF(doc, `Toutes_Factures_Cloture_${weekRangeFilename}.pdf`);
+    }
     
     // Archiver les livraisons
     setArchivedDeliveries(prev => [...prev, ...deliveries]);
