@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import { exportPDF } from '../pdfHelper';
 import {
   BarChart,
   Bar,
@@ -112,7 +113,7 @@ const Reports: React.FC = () => {
     doc.text(`- Total Dépenses : ${currentMonth.Fournisseurs + currentMonth.Personnel + currentMonth.FraisFixes} DH`, 30, 105);
     doc.text(`- Bénéfice Net : ${profitCurrent} DH`, 30, 115);
     
-    doc.save(`Rapport_Mensuel_${currentMonth.name}.pdf`);
+    exportPDF(doc, `Rapport_Mensuel_${currentMonth.name}.pdf`);
   };
 
   return (

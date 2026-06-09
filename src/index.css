@@ -119,6 +119,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-item {
@@ -231,6 +233,10 @@ body {
 
 /* Mobile & Tablet Responsiveness */
 @media (max-width: 768px) {
+  .app-header {
+    position: absolute;
+  }
+  
   .main-content {
     padding: 6rem 1rem 2rem 1rem;
   }
@@ -266,10 +272,70 @@ body {
 
   .table-container {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .form-group {
     margin-bottom: 1rem;
+  }
+}
+
+/* Landscape mode on mobile - reduce header, fix scrolling */
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-header {
+    position: absolute;
+    height: 48px;
+    padding: 0 1rem;
+  }
+
+  .header-title {
+    font-size: 1rem;
+  }
+
+  .menu-toggle-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .main-content {
+    padding: 4rem 1rem 1rem 1rem;
+  }
+
+  .sidebar {
+    width: 240px;
+  }
+
+  .sidebar-header {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  .sidebar-nav {
+    padding: 0.5rem 0;
+    gap: 0.25rem;
+  }
+
+  .nav-item {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .sidebar-footer {
+    padding: 0.75rem !important;
+  }
+
+  .modal-overlay {
+    padding: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .modal-content {
+    padding: 1.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
   }
 }
 
@@ -354,6 +420,7 @@ body {
 .table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 700px;
 }
 
 .table th, .table td {
@@ -450,10 +517,12 @@ body {
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  z-index: 50;
+  z-index: 100;
   padding: 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-content {
@@ -465,6 +534,8 @@ body {
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
   animation: modalIn 0.3s ease-out;
+  margin: auto 0;
+  flex-shrink: 0;
 }
 
 @keyframes modalIn {

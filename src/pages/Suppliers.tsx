@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
+import { exportPDF } from '../pdfHelper';
 import { Plus, CheckCircle, Trash2, ShoppingBag, Download } from 'lucide-react';
 import { mockSuppliers, mockDeliveries } from '../mockData';
 import type { Supplier, Delivery } from '../types';
@@ -193,7 +194,7 @@ const Suppliers: React.FC = () => {
     doc.text(`${sortedFilteredHistory.length} livraison(s)`, 50, yOffset);
     doc.text(`${grandTotal} DH`, 180, yOffset);
     
-    doc.save("Historique_Livraisons_Fournisseurs.pdf");
+    exportPDF(doc, `Historique_Livraisons_Fournisseurs.pdf`);
   };
 
   const handleAddSupplier = () => {
@@ -321,7 +322,7 @@ const Suppliers: React.FC = () => {
         yOffset += 10;
       });
       
-      doc.save(`Facture_${supplier.name.replace(/\s+/g, '_')}_Semaine_${weekRangeFilename}.pdf`);
+      exportPDF(doc, `Facture_${supplier.name.replace(/\s+/g, '_')}_Semaine_${weekRangeFilename}.pdf`);
     });
     
     // Archiver les livraisons

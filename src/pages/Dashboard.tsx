@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   TrendingUp
 } from 'lucide-react';
+import { exportPDF } from '../pdfHelper';
 import {
   BarChart,
   Bar,
@@ -55,8 +56,9 @@ const Dashboard: React.FC = () => {
 
     const savedDeliveries = localStorage.getItem('app_deliveries');
     const savedArchive = localStorage.getItem('app_deliveries_archive');
-    const deliveries = [
-      ...(savedDeliveries ? JSON.parse(savedDeliveries) : []),
+    const activeDeliveries = savedDeliveries ? JSON.parse(savedDeliveries) : [];
+    const allDeliveries = [
+      ...activeDeliveries,
       ...(savedArchive ? JSON.parse(savedArchive) : [])
     ];
 
@@ -73,7 +75,7 @@ const Dashboard: React.FC = () => {
       const dayDate = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
       const dayStr = formatDateLocal(dayDate);
 
-      const dayDeliveries = deliveries.filter((d: any) => d.date === dayStr);
+      const dayDeliveries = activeDeliveries.filter((d: any) => d.date === dayStr);
       weeklyFournisseursTotal += dayDeliveries.reduce((sum: number, d: any) => sum + Number(d.totalPrice), 0);
 
       const dayPayroll = payroll.filter((p: any) => p.date === dayStr);
@@ -136,7 +138,7 @@ const Dashboard: React.FC = () => {
         const dayIncome = incomes.find((inc: any) => inc.date === dayStr);
         if (dayIncome) weekRevenu += dayIncome.amount;
 
-        const dayDels = deliveries.filter((del: any) => del.date === dayStr);
+        const dayDels = allDeliveries.filter((del: any) => del.date === dayStr);
         weekFournisseurs += dayDels.reduce((sum: number, d: any) => sum + Number(d.totalPrice), 0);
 
         const dayPay = payroll.filter((p: any) => p.date === dayStr);
@@ -165,6 +167,7 @@ const Dashboard: React.FC = () => {
 
   const handleExport = () => {
     const doc = new jsPDF();
+    const monday = getMondayOfWeek();
     doc.setFontSize(20);
     doc.text(`Rapport Hebdomadaire Global ${getWeekRange()}`, 20, 20);
     doc.setFontSize(14);
@@ -184,7 +187,7 @@ const Dashboard: React.FC = () => {
     
     doc.text("Ce rapport inclut la synthèse globale. Les factures détaillées par fournisseur sont générées lors de la Clôture du Dimanche dans l'onglet Fournisseurs.", 20, 110, { maxWidth: 170 });
     
-    doc.save("Rapport_Hebdomadaire.pdf");
+    exportPDF(doc, "Rapport_Hebdomadaire.pdf");
   };
 
 
