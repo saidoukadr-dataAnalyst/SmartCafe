@@ -39,7 +39,7 @@ jobs:
         run: |
           cd ios/App
           # Compilation de l'application sans signature (pour test/sideload)
-          xcodebuild -workspace App.xcworkspace \
+          xcodebuild -project App.xcodeproj \
                      -scheme App \
                      -configuration Release \
                      -sdk iphoneos \
