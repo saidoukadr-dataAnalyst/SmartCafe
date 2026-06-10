@@ -63,8 +63,8 @@ const Suppliers: React.FC = () => {
   const [delSupplierId, setDelSupplierId] = useState('');
   const [delDate, setDelDate] = useState(formatDateLocal(new Date()));
   const [delLabel, setDelLabel] = useState('');
-  const [delQuantity, setDelQuantity] = useState<number | ''>('');
-  const [delTotalPrice, setDelTotalPrice] = useState<number | ''>('');
+  const [delQuantity, setDelQuantity] = useState<string>('');
+  const [delTotalPrice, setDelTotalPrice] = useState<string>('');
 
   // Sync to local storage
   useEffect(() => {
@@ -798,39 +798,6 @@ const Suppliers: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL: Nouveau Fournisseur */}
-      {showSupplierModal && (
-        <div className="modal-overlay" onClick={() => setShowSupplierModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem' }}>Nouveau Fournisseur</h2>
-            <div className="form-group">
-              <label className="form-label">Nom du Fournisseur</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="Ex: Boulangerie Centrale" 
-                value={newSupplierName}
-                onChange={e => setNewSupplierName(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Contact</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="Téléphone ou Email" 
-                value={newSupplierContact}
-                onChange={e => setNewSupplierContact(e.target.value)}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-              <button className="btn btn-outline" onClick={() => setShowSupplierModal(false)}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleAddSupplier}>Sauvegarder</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* MODAL: Nouvelle Livraison (Dépense) */}
       {showDeliveryModal && (
         <div className="modal-overlay" onClick={() => setShowDeliveryModal(false)}>
@@ -890,7 +857,7 @@ const Suppliers: React.FC = () => {
                     placeholder="Ex: 10"
                     min="1"
                     value={delQuantity}
-                    onChange={e => setDelQuantity(e.target.value ? Number(e.target.value) : '')}
+                    onChange={e => setDelQuantity(e.target.value)}
                     required
                   />
                 </div>
@@ -904,7 +871,7 @@ const Suppliers: React.FC = () => {
                     min="0"
                     step="0.01"
                     value={delTotalPrice}
-                    onChange={e => setDelTotalPrice(e.target.value ? Number(e.target.value) : '')}
+                    onChange={e => setDelTotalPrice(e.target.value)}
                     required
                   />
                 </div>
@@ -915,6 +882,39 @@ const Suppliers: React.FC = () => {
                 <button type="submit" className="btn btn-primary">Enregistrer Dépense</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Nouveau Fournisseur */}
+      {showSupplierModal && (
+        <div className="modal-overlay" onClick={() => setShowSupplierModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h2 style={{ marginBottom: '1.5rem' }}>Nouveau Fournisseur</h2>
+            <div className="form-group">
+              <label className="form-label">Nom du Fournisseur</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Ex: Boulangerie Centrale" 
+                value={newSupplierName}
+                onChange={e => setNewSupplierName(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Contact</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Téléphone ou Email" 
+                value={newSupplierContact}
+                onChange={e => setNewSupplierContact(e.target.value)}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
+              <button className="btn btn-outline" onClick={() => setShowSupplierModal(false)}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleAddSupplier}>Sauvegarder</button>
+            </div>
           </div>
         </div>
       )}
