@@ -292,7 +292,7 @@ const Suppliers: React.FC = () => {
     const formatWeekDate = (d: Date) => {
       const dd = String(d.getDate()).padStart(2, '0');
       const mm = String(d.getMonth() + 1).padStart(2, '0');
-      return `${dd}/${mm}`;
+      return `${dd}-${mm}`;
     };
     
     const weekRangeStr = `${formatWeekDate(monday)} au ${formatWeekDate(sunday)}`;
@@ -900,7 +900,7 @@ const Suppliers: React.FC = () => {
 
       {/* MODAL: Nouveau Fournisseur */}
       {showSupplierModal && (
-        <div className="modal-overlay" onClick={() => setShowSupplierModal(false)}>
+        <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setShowSupplierModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2 style={{ marginBottom: '1.5rem' }}>Nouveau Fournisseur</h2>
             <div className="form-group">
