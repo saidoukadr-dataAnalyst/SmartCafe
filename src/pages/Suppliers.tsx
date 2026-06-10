@@ -66,6 +66,18 @@ const Suppliers: React.FC = () => {
   const [delQuantity, setDelQuantity] = useState<string>('');
   const [delTotalPrice, setDelTotalPrice] = useState<string>('');
 
+  // Toast Notification State
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+
+  const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setTimeout(() => {
+      setToastMessage('');
+    }, 4000);
+  };
+
   // Sync to local storage
   useEffect(() => {
     localStorage.setItem('app_suppliers', JSON.stringify(suppliers));
@@ -216,14 +228,14 @@ const Suppliers: React.FC = () => {
       setNewSupplierContact('');
       setShowSupplierModal(false);
     } else {
-      alert("Le nom du fournisseur est obligatoire.");
+      showToast("Le nom du fournisseur est obligatoire.", "error");
     }
   };
 
   const handleAddDelivery = (e: React.FormEvent) => {
     e.preventDefault();
     if (!delSupplierId || !delLabel || !delQuantity || !delTotalPrice) {
-      alert("Veuillez remplir tous les champs obligatoires.");
+      showToast("Veuillez remplir tous les champs obligatoires.", "error");
       return;
     }
 
@@ -250,7 +262,7 @@ const Suppliers: React.FC = () => {
     setDelQuantity('');
     setDelTotalPrice('');
     setShowDeliveryModal(false);
-    alert("Dépense / Livraison enregistrée avec succès !");
+    showToast("Dépense / Livraison enregistrée avec succès !", "success");
   };
 
   const handleClotureDimanche = () => {
@@ -258,7 +270,7 @@ const Suppliers: React.FC = () => {
     const activeDettes = suppliers.reduce((sum, s) => sum + s.totalOwed, 0);
 
     if (activeDeliveriesCount === 0 && activeDettes === 0) {
-      alert("Aucune livraison ni dette à clôturer cette semaine.");
+      showToast("Aucune livraison ni dette à clôturer cette semaine.", "info");
       return;
     }
 
@@ -346,7 +358,7 @@ const Suppliers: React.FC = () => {
 
     setSuppliers(suppliers.map(s => ({ ...s, totalOwed: 0 })));
     setDeliveries([]);
-    alert("Clôture du Dimanche effectuée ! Les dettes ont été réglées, les PDF générés, et les livraisons archivées.");
+    showToast("Clôture du Dimanche effectuée ! Les dettes ont été réglées, les PDF générés, et les livraisons archivées.", "success");
   };
 
   return (
@@ -916,6 +928,29 @@ const Suppliers: React.FC = () => {
               <button className="btn btn-primary" onClick={handleAddSupplier}>Sauvegarder</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: toastType === 'error' ? 'var(--danger)' : toastType === 'info' ? 'var(--accent-primary)' : 'var(--success)',
+          color: 'white',
+          padding: '1rem 1.5rem',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 9999,
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          {toastType === 'success' && <CheckCircle size={20} />}
+          {toastMessage}
         </div>
       )}
     </div>
