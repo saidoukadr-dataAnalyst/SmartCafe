@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { Plus, CalendarDays } from 'lucide-react';
+import { Plus, CalendarDays, CheckCircle } from 'lucide-react';
 import { mockDailyIncome } from '../mockData';
 import type { DailyIncome } from '../types';
 
@@ -20,6 +20,15 @@ const Income: React.FC = () => {
   });
   const [date, setDate] = useState<Date>(new Date());
   const [amount, setAmount] = useState<string>('');
+
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+
+  const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setTimeout(() => setToastMessage(''), 4000);
+  };
 
   const formattedDate = formatDateLocal(date);
   const incomeForDate = incomes.find(i => i.date === formattedDate);
@@ -41,7 +50,7 @@ const Income: React.FC = () => {
     setIncomes(newIncomes);
     localStorage.setItem('app_incomes', JSON.stringify(newIncomes));
     setAmount('');
-    alert('Revenu enregistré avec succès !');
+    showToast('Revenu enregistré avec succès !', 'success');
   };
 
   const tileContent = ({ date, view }: { date: Date, view: string }) => {
@@ -127,6 +136,29 @@ const Income: React.FC = () => {
           border-radius: var(--radius-md);
         }
       `}</style>
+      
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: toastType === 'error' ? 'var(--danger)' : toastType === 'info' ? 'var(--accent-primary)' : 'var(--success)',
+          color: 'white',
+          padding: '1rem 1.5rem',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 9999,
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          {toastType === 'success' && <CheckCircle size={20} />}
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 };

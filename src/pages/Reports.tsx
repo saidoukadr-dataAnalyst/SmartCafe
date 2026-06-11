@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download } from 'lucide-react';
+import { Download, CheckCircle } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { exportPDF } from '../pdfHelper';
 import {
@@ -33,6 +33,15 @@ const yearlyDataRaw = [
 const Reports: React.FC = () => {
   const [reportData, setReportData] = React.useState(yearlyDataRaw);
   const [weeklyDataState, setWeeklyDataState] = React.useState<any[]>([]);
+
+  const [toastMessage, setToastMessage] = React.useState('');
+  const [toastType, setToastType] = React.useState<'success' | 'error' | 'info'>('success');
+
+  const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setTimeout(() => setToastMessage(''), 4000);
+  };
 
   React.useEffect(() => {
     const currentMonthStr = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
@@ -160,7 +169,7 @@ const Reports: React.FC = () => {
 
   const handleExportWeekly = () => {
     if (weeklyDataState.length === 0) {
-      alert("Aucune donnée hebdomadaire disponible.");
+      showToast("Aucune donnée hebdomadaire disponible.", "info");
       return;
     }
     const doc = new jsPDF();
@@ -339,6 +348,29 @@ const Reports: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: toastType === 'error' ? 'var(--danger)' : toastType === 'info' ? 'var(--accent-primary)' : 'var(--success)',
+          color: 'white',
+          padding: '1rem 1.5rem',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 9999,
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          {toastType === 'success' && <CheckCircle size={20} />}
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 };

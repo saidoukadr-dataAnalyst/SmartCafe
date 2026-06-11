@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle } from 'lucide-react';
 import { mockFixedExpenses } from '../mockData';
 import type { FixedExpense } from '../types';
 
@@ -29,6 +29,15 @@ const Expenses: React.FC = () => {
   const [newMonth, setNewMonth] = useState('');
   const [newCategory, setNewCategory] = useState('Autres');
 
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+
+  const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(msg);
+    setToastType(type);
+    setTimeout(() => setToastMessage(''), 4000);
+  };
+
   const handleAddExpense = () => {
     if (newType.trim() && newAmount && newMonth) {
       // Format month from YYYY-MM to readable (if needed) or keep as is.
@@ -48,7 +57,7 @@ const Expenses: React.FC = () => {
       setNewCategory('Autres');
       setShowModal(false);
     } else {
-      alert("Veuillez remplir tous les champs.");
+      showToast("Veuillez remplir tous les champs.", "error");
     }
   };
 
@@ -179,6 +188,29 @@ const Expenses: React.FC = () => {
               <button className="btn btn-primary" onClick={handleAddExpense}>Ajouter</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: toastType === 'error' ? 'var(--danger)' : toastType === 'info' ? 'var(--accent-primary)' : 'var(--success)',
+          color: 'white',
+          padding: '1rem 1.5rem',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 9999,
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          {toastType === 'success' && <CheckCircle size={20} />}
+          {toastMessage}
         </div>
       )}
     </div>
