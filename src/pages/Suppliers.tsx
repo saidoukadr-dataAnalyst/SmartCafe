@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { exportPDF } from '../pdfHelper';
-import { Plus, CheckCircle, Trash2, ShoppingBag, Download } from 'lucide-react';
+import { Plus, CheckCircle, Trash2, Edit2, ShoppingBag, Download } from 'lucide-react';
 import { mockSuppliers, mockDeliveries } from '../mockData';
+import { moveToTrash } from '../trashHelper';
 import type { Supplier, Delivery } from '../types';
 
 // Helper: format Date to local YYYY-MM-DD string without timezone shifting
@@ -58,6 +60,7 @@ const Suppliers: React.FC = () => {
   // New Supplier Form
   const [newSupplierName, setNewSupplierName] = useState('');
   const [newSupplierContact, setNewSupplierContact] = useState('');
+  const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
 
   // New Delivery Form
   const [delSupplierId, setDelSupplierId] = useState('');
@@ -65,6 +68,7 @@ const Suppliers: React.FC = () => {
   const [delLabel, setDelLabel] = useState('');
   const [delQuantity, setDelQuantity] = useState<string>('');
   const [delTotalPrice, setDelTotalPrice] = useState<string>('');
+  const [editingDeliveryId, setEditingDeliveryId] = useState<string | null>(null);
 
   // Toast Notification State
   const [toastMessage, setToastMessage] = useState('');
@@ -107,6 +111,9 @@ const Suppliers: React.FC = () => {
 
   const handleDeleteSupplier = (id: string) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce fournisseur ? Toutes ses livraisons associées seront ignorées.")) {
+      const supplier = suppliers.find(s => s.id === id);
+      if (supplier) moveToTrash('supplier', supplier);
+      
       setSuppliers(suppliers.filter(s => s.id !== id));
       setDeliveries(deliveries.filter(d => d.supplierId !== id));
     }
@@ -125,107 +132,115 @@ const Suppliers: React.FC = () => {
 
   const handleDeleteArchivedDelivery = (deliveryId: string) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cette livraison de l'historique ?")) {
+      const delivery = archivedDeliveries.find(d => d.id === deliveryId);
+      if (delivery) moveToTrash('delivery', delivery);
       setArchivedDeliveries(archivedDeliveries.filter(d => d.id !== deliveryId));
     }
   };
 
+  const handleEditSupplier = (supplier: Supplier) => {
+    setNewSupplierName(supplier.name);
+    setNewSupplierContact(supplier.contact);
+    setEditingSupplierId(supplier.id);
+    setShowSupplierModal(true);
+  };
+
+  const handleEditDelivery = (delivery: Delivery) => {
+    setDelSupplierId(delivery.supplierId);
+    setDelDate(delivery.date);
+    setDelLabel(delivery.label);
+    setDelQuantity(delivery.quantity.toString());
+    setDelTotalPrice(delivery.totalPrice.toString());
+    setEditingDeliveryId(delivery.id);
+    setShowDeliveryModal(true);
+  };
+
   const handleClearHistory = () => {
-    if (window.confirm("Êtes-vous sûr de vouloir effacer l'intégralité de l'historique archivé ? Cette action est irréversible.")) {
+    if (window.confirm("Êtes-vous sûr de vouloir effacer l'intégralité de l'historique archivé ? (Les éléments seront envoyés dans la corbeille)")) {
+      if (archivedDeliveries.length > 0) moveToTrash('delivery', archivedDeliveries);
       setArchivedDeliveries([]);
     }
   };
 
   const handleExportHistoryPDF = () => {
     const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text("Historique des Livraisons Fournisseurs", 20, 20);
-    doc.setFontSize(11);
-    doc.text(`Généré le : ${new Date().toLocaleDateString('fr-FR')}`, 20, 28);
+    const pageWidth = doc.internal.pageSize.width;
     
-    // Filters summary
-    let filterText = "Filtres appliqués : ";
-    if (historySupplierId) {
-      filterText += `Fournisseur: ${getSupplierName(historySupplierId)} | `;
-    } else {
-      filterText += "Tous les fournisseurs | ";
-    }
-    if (historySearchQuery) filterText += `Recherche: "${historySearchQuery}" | `;
-    if (historyStartDate || historyEndDate) {
-      filterText += `Période: ${historyStartDate || 'Début'} à ${historyEndDate || 'Fin'}`;
-    }
-    doc.setFontSize(9);
-    doc.text(filterText, 20, 35);
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text("📦 Historique des Livraisons", pageWidth / 2, 20, { align: 'center' });
     
-    let yOffset = 45;
+    doc.setFontSize(12);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Généré le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 28, { align: 'center' });
+    
+    let filterText = "Filtres : ";
+    if (historySupplierId) filterText += `Fournisseur: ${getSupplierName(historySupplierId)} | `;
+    if (historySearchQuery) filterText += `Rech: "${historySearchQuery}" | `;
+    if (historyStartDate || historyEndDate) filterText += `Période: ${historyStartDate || 'Début'} à ${historyEndDate || 'Fin'}`;
+    
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text("Date", 20, yOffset);
-    doc.text("Fournisseur", 50, yOffset);
-    doc.text("Produit / Label", 100, yOffset);
-    doc.text("Qté", 160, yOffset);
-    doc.text("Prix", 180, yOffset);
-    doc.setFont('helvetica', 'normal');
-    yOffset += 8;
-    
-    doc.setLineWidth(0.5);
-    doc.line(20, yOffset - 3, 195, yOffset - 3);
-    
-    sortedFilteredHistory.forEach((d) => {
-      if (yOffset > 270) {
-        doc.addPage();
-        yOffset = 20;
-        // Repeat headers
-        doc.setFont('helvetica', 'bold');
-        doc.text("Date", 20, yOffset);
-        doc.text("Fournisseur", 50, yOffset);
-        doc.text("Produit / Label", 100, yOffset);
-        doc.text("Qté", 160, yOffset);
-        doc.text("Prix", 180, yOffset);
-        doc.setFont('helvetica', 'normal');
-        yOffset += 8;
-        doc.line(20, yOffset - 3, 195, yOffset - 3);
+    doc.setTextColor(100, 116, 139);
+    doc.text(filterText, pageWidth / 2, 36, { align: 'center' });
+
+    const tableData = sortedFilteredHistory.map(d => [
+      d.date,
+      getSupplierName(d.supplierId),
+      d.label,
+      d.quantity,
+      `${d.totalPrice} DH`
+    ]);
+
+    autoTable(doc, {
+      startY: 42,
+      head: [['Date', 'Fournisseur', 'Produit / Label', 'Qté', 'Prix']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 10, cellPadding: 4 },
+      columnStyles: {
+        4: { fontStyle: 'bold', halign: 'right' },
       }
-      
-      const supplierName = getSupplierName(d.supplierId);
-      const truncatedSupplier = supplierName.length > 20 ? supplierName.slice(0, 18) + ".." : supplierName;
-      const truncatedLabel = d.label.length > 28 ? d.label.slice(0, 26) + ".." : d.label;
-      
-      doc.text(`${d.date}`, 20, yOffset);
-      doc.text(`${truncatedSupplier}`, 50, yOffset);
-      doc.text(`${truncatedLabel}`, 100, yOffset);
-      doc.text(`${d.quantity}`, 160, yOffset);
-      doc.text(`${d.totalPrice} DH`, 180, yOffset);
-      yOffset += 7;
     });
-    
+
     const grandTotal = sortedFilteredHistory.reduce((sum, d) => sum + Number(d.totalPrice), 0);
-    yOffset += 5;
-    doc.line(20, yOffset - 3, 195, yOffset - 3);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Total :`, 20, yOffset);
-    doc.text(`${sortedFilteredHistory.length} livraison(s)`, 50, yOffset);
-    doc.text(`${grandTotal} DH`, 180, yOffset);
+    const finalY = (doc as any).lastAutoTable?.finalY || 100;
     
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(14, finalY + 10, pageWidth - 28, 20, 3, 3, 'FD');
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Total (${sortedFilteredHistory.length} livraisons) :`, 20, finalY + 23);
+    
+    doc.setTextColor(59, 130, 246);
+    doc.text(`${grandTotal} DH`, pageWidth - 20, finalY + 23, { align: 'right' });
+
     exportPDF(doc, `Historique_Livraisons_Fournisseurs.pdf`);
   };
 
   const handleAddSupplier = () => {
     if (newSupplierName.trim()) {
-      const newSupplier = {
-        id: Date.now().toString(),
-        name: newSupplierName,
-        contact: newSupplierContact,
-        totalOwed: 0
-      };
-      setSuppliers([...suppliers, newSupplier]);
-      
-      // Auto-select for delivery if we came from delivery modal
-      if (showDeliveryModal) {
-        setDelSupplierId(newSupplier.id);
+      if (editingSupplierId) {
+        setSuppliers(suppliers.map(s => s.id === editingSupplierId ? { ...s, name: newSupplierName, contact: newSupplierContact } : s));
+      } else {
+        const newSupplier = {
+          id: Date.now().toString(),
+          name: newSupplierName,
+          contact: newSupplierContact,
+          totalOwed: 0
+        };
+        setSuppliers([...suppliers, newSupplier]);
+        if (showDeliveryModal) {
+          setDelSupplierId(newSupplier.id);
+        }
       }
-      
       setNewSupplierName('');
       setNewSupplierContact('');
+      setEditingSupplierId(null);
       setShowSupplierModal(false);
     } else {
       showToast("Le nom du fournisseur est obligatoire.", "error");
@@ -248,19 +263,39 @@ const Suppliers: React.FC = () => {
       totalPrice: Number(delTotalPrice)
     };
 
-    setDeliveries([...deliveries, newDelivery]);
-    
-    // Update supplier totalowed
-    setSuppliers(suppliers.map(s => 
-      s.id === delSupplierId 
-        ? { ...s, totalOwed: s.totalOwed + Number(delTotalPrice) }
-        : s
-    ));
+    if (editingDeliveryId) {
+      const oldDelivery = deliveries.find(d => d.id === editingDeliveryId) || archivedDeliveries.find(d => d.id === editingDeliveryId);
+      if (oldDelivery) {
+        if (deliveries.find(d => d.id === editingDeliveryId)) {
+          setDeliveries(deliveries.map(d => d.id === editingDeliveryId ? newDelivery : d));
+          // Adjust supplier totalOwed
+          setSuppliers(suppliers.map(s => {
+            if (s.id === oldDelivery.supplierId) {
+              return { ...s, totalOwed: Math.max(0, s.totalOwed - oldDelivery.totalPrice + newDelivery.totalPrice) };
+            }
+            if (oldDelivery.supplierId !== newDelivery.supplierId && s.id === newDelivery.supplierId) {
+              return { ...s, totalOwed: s.totalOwed + newDelivery.totalPrice };
+            }
+            return s;
+          }));
+        } else {
+          setArchivedDeliveries(archivedDeliveries.map(d => d.id === editingDeliveryId ? newDelivery : d));
+        }
+      }
+    } else {
+      setDeliveries([...deliveries, newDelivery]);
+      setSuppliers(suppliers.map(s => 
+        s.id === delSupplierId 
+          ? { ...s, totalOwed: s.totalOwed + Number(delTotalPrice) }
+          : s
+      ));
+    }
 
     // Reset form
     setDelLabel('');
     setDelQuantity('');
     setDelTotalPrice('');
+    setEditingDeliveryId(null);
     setShowDeliveryModal(false);
     showToast("Dépense / Livraison enregistrée avec succès !", "success");
   };
@@ -299,6 +334,7 @@ const Suppliers: React.FC = () => {
     const weekRangeFilename = `${formatWeekDate(monday)}_au_${formatWeekDate(sunday)}`;
 
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
     let hasPages = false;
 
     suppliers.forEach((supplier) => {
@@ -310,45 +346,59 @@ const Suppliers: React.FC = () => {
       }
       hasPages = true;
 
-      doc.setFontSize(20);
-      doc.text(`Facture / Rapport Hebdomadaire`, 20, 20);
-      doc.setFontSize(12);
-      doc.text(`Période : Semaine du ${weekRangeStr}`, 20, 28);
+      doc.setFontSize(22);
+      doc.setTextColor(30, 41, 59);
+      doc.text(`📄 Facture / Rapport Hebdomadaire`, pageWidth / 2, 20, { align: 'center' });
       
-      doc.setFontSize(14);
-      doc.text(`Fournisseur: ${supplier.name}`, 20, 42);
-      doc.text(`Contact: ${supplier.contact}`, 20, 52);
-      doc.text(`Montant Total Dû: ${supplier.totalOwed} DH`, 20, 62);
-      
-      let yOffset = 82;
       doc.setFontSize(12);
-      doc.text('Détail des livraisons de la semaine:', 20, yOffset);
-      yOffset += 10;
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Période : Semaine du ${weekRangeStr}`, pageWidth / 2, 28, { align: 'center' });
+
+      // Info bloc
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(14, 38, pageWidth - 28, 30, 3, 3, 'FD');
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 41, 59);
+      doc.text(`Fournisseur: ${supplier.name}`, 20, 48);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Contact: ${supplier.contact || 'N/A'}`, 20, 56);
       
       doc.setFont('helvetica', 'bold');
-      doc.text(`Date`, 20, yOffset);
-      doc.text(`Produit`, 50, yOffset);
-      doc.text(`Qté`, 120, yOffset);
-      doc.text(`Prix`, 150, yOffset);
-      doc.setFont('helvetica', 'normal');
-      yOffset += 10;
+      doc.setTextColor(239, 68, 68); // danger
+      doc.text(`Montant Total Dû: ${supplier.totalOwed} DH`, 20, 64);
 
-      supplierDeliveries.forEach(d => {
-        doc.text(`${d.date}`, 20, yOffset);
-        doc.text(`${d.label}`, 50, yOffset);
-        doc.text(`${d.quantity}`, 120, yOffset);
-        doc.text(`${d.totalPrice} DH`, 150, yOffset);
-        yOffset += 10;
+      const tableData = supplierDeliveries.map(d => [
+        d.date,
+        d.label,
+        d.quantity,
+        `${d.totalPrice} DH`
+      ]);
+
+      autoTable(doc, {
+        startY: 75,
+        head: [['Date', 'Produit', 'Qté', 'Prix']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] },
+        styles: { fontSize: 10, cellPadding: 4 },
+        columnStyles: {
+          3: { halign: 'right', fontStyle: 'bold' }
+        }
       });
     });
 
     if (!hasPages) {
-      doc.setFontSize(20);
-      doc.text(`Facture / Rapport Hebdomadaire`, 20, 20);
-      doc.setFontSize(12);
-      doc.text(`Période : Semaine du ${weekRangeStr}`, 20, 28);
+      doc.setFontSize(22);
+      doc.setTextColor(30, 41, 59);
+      doc.text(`Facture / Rapport Hebdomadaire`, pageWidth / 2, 20, { align: 'center' });
       doc.setFontSize(14);
-      doc.text(`Aucune livraison et aucune dette pour cette semaine.`, 20, 50);
+      doc.text(`Aucune livraison et aucune dette pour cette semaine.`, pageWidth / 2, 50, { align: 'center' });
     }
 
     exportPDF(doc, `Toutes_Factures_Cloture_${weekRangeFilename}.pdf`);
@@ -366,10 +416,10 @@ const Suppliers: React.FC = () => {
       <div className="page-header">
         <h1 className="page-title">Gestion des Fournisseurs</h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className="btn btn-outline" onClick={() => setShowSupplierModal(true)}>
+          <button className="btn btn-outline" onClick={() => { setEditingSupplierId(null); setNewSupplierName(''); setNewSupplierContact(''); setShowSupplierModal(true); }}>
             <Plus size={18} /> Ajouter Fournisseur
           </button>
-          <button className="btn btn-primary" onClick={() => setShowDeliveryModal(true)}>
+          <button className="btn btn-primary" onClick={() => { setEditingDeliveryId(null); setDelSupplierId(''); setDelLabel(''); setDelQuantity(''); setDelTotalPrice(''); setShowDeliveryModal(true); }}>
             <ShoppingBag size={18} /> Saisir Dépense
           </button>
           {activeTab === 'current' && (
@@ -454,6 +504,10 @@ const Suppliers: React.FC = () => {
                           style={{ padding: '0.5rem' }}
                           title="Saisir une dépense pour ce fournisseur"
                           onClick={() => {
+                            setEditingDeliveryId(null);
+                            setDelLabel('');
+                            setDelQuantity('');
+                            setDelTotalPrice('');
                             setDelSupplierId(supplier.id);
                             setShowDeliveryModal(true);
                           }}
@@ -468,6 +522,14 @@ const Suppliers: React.FC = () => {
                           }}
                         >
                           Voir Livraisons
+                        </button>
+                        <button 
+                          className="btn btn-outline"
+                          onClick={() => handleEditSupplier(supplier)}
+                          title="Modifier ce fournisseur"
+                          style={{ padding: '0.5rem' }}
+                        >
+                          <Edit2 size={16} />
                         </button>
                         <button 
                           className="btn btn-danger"
@@ -528,14 +590,24 @@ const Suppliers: React.FC = () => {
                         <td>{d.quantity}</td>
                         <td><strong>{d.totalPrice} DH</strong></td>
                         <td>
-                          <button 
-                            className="btn" 
-                            style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
-                            title="Supprimer cette livraison"
-                            onClick={() => handleDeleteActiveDelivery(d.id, d.supplierId, d.totalPrice)}
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button 
+                              className="btn btn-outline" 
+                              style={{ padding: '0.25rem', cursor: 'pointer' }}
+                              title="Modifier cette livraison"
+                              onClick={() => handleEditDelivery(d)}
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button 
+                              className="btn" 
+                              style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
+                              title="Supprimer cette livraison"
+                              onClick={() => handleDeleteActiveDelivery(d.id, d.supplierId, d.totalPrice)}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -693,14 +765,24 @@ const Suppliers: React.FC = () => {
                     <td>{d.quantity}</td>
                     <td><strong>{d.totalPrice} DH</strong></td>
                     <td>
-                      <button 
-                        className="btn" 
-                        style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
-                        title="Supprimer de l'historique"
-                        onClick={() => handleDeleteArchivedDelivery(d.id)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button 
+                          className="btn btn-outline" 
+                          style={{ padding: '0.25rem', cursor: 'pointer' }}
+                          title="Modifier cette livraison"
+                          onClick={() => handleEditDelivery(d)}
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          className="btn" 
+                          style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
+                          title="Supprimer de l'historique"
+                          onClick={() => handleDeleteArchivedDelivery(d.id)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -769,20 +851,30 @@ const Suppliers: React.FC = () => {
                       <td>{d.quantity}</td>
                       <td><strong>{d.totalPrice} DH</strong></td>
                       <td>
-                        <button 
-                          className="btn" 
-                          style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
-                          title="Supprimer cette livraison"
-                          onClick={() => {
-                            if (!showArchiveInModal) {
-                              handleDeleteActiveDelivery(d.id, selectedSupplier.id, d.totalPrice);
-                            } else {
-                              handleDeleteArchivedDelivery(d.id);
-                            }
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button 
+                            className="btn btn-outline" 
+                            style={{ padding: '0.25rem', cursor: 'pointer' }}
+                            title="Modifier cette livraison"
+                            onClick={() => handleEditDelivery(d)}
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            className="btn" 
+                            style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
+                            title="Supprimer cette livraison"
+                            onClick={() => {
+                              if (!showArchiveInModal) {
+                                handleDeleteActiveDelivery(d.id, selectedSupplier.id, d.totalPrice);
+                              } else {
+                                handleDeleteArchivedDelivery(d.id);
+                              }
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -814,7 +906,7 @@ const Suppliers: React.FC = () => {
       {showDeliveryModal && (
         <div className="modal-overlay" onClick={() => setShowDeliveryModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem' }}>Saisir une Dépense (Livraison)</h2>
+            <h2 style={{ marginBottom: '1.5rem' }}>{editingDeliveryId ? "Modifier Dépense (Livraison)" : "Saisir une Dépense (Livraison)"}</h2>
             <form onSubmit={handleAddDelivery}>
               <div className="form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -890,8 +982,8 @@ const Suppliers: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-                <button type="button" className="btn btn-outline" onClick={() => setShowDeliveryModal(false)}>Annuler</button>
-                <button type="submit" className="btn btn-primary">Enregistrer Dépense</button>
+                <button type="button" className="btn btn-outline" onClick={() => { setEditingDeliveryId(null); setShowDeliveryModal(false); }}>Annuler</button>
+                <button type="submit" className="btn btn-primary">{editingDeliveryId ? "Enregistrer" : "Enregistrer Dépense"}</button>
               </div>
             </form>
           </div>
@@ -902,7 +994,7 @@ const Suppliers: React.FC = () => {
       {showSupplierModal && (
         <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setShowSupplierModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem' }}>Nouveau Fournisseur</h2>
+            <h2 style={{ marginBottom: '1.5rem' }}>{editingSupplierId ? "Modifier Fournisseur" : "Nouveau Fournisseur"}</h2>
             <div className="form-group">
               <label className="form-label">Nom du Fournisseur</label>
               <input 
@@ -924,8 +1016,8 @@ const Suppliers: React.FC = () => {
               />
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-              <button className="btn btn-outline" onClick={() => setShowSupplierModal(false)}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleAddSupplier}>Sauvegarder</button>
+              <button className="btn btn-outline" onClick={() => { setEditingSupplierId(null); setShowSupplierModal(false); }}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleAddSupplier}>{editingSupplierId ? "Enregistrer" : "Sauvegarder"}</button>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   Download, 
   DollarSign, 
@@ -167,25 +168,65 @@ const Dashboard: React.FC = () => {
 
   const handleExport = () => {
     const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text(`Rapport Hebdomadaire Global ${getWeekRange()}`, 20, 20);
+    const pageWidth = doc.internal.pageSize.width;
+
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`📊 Rapport Hebdomadaire Global`, pageWidth / 2, 20, { align: 'center' });
+    
     doc.setFontSize(14);
-    doc.text(`Édité le : ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
+    doc.setTextColor(100, 116, 139);
+    doc.text(getWeekRange(), pageWidth / 2, 28, { align: 'center' });
+
+    doc.setFontSize(12);
+    doc.text(`Édité le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 36, { align: 'center' });
     
     // Calculate weekly sums from the daily chartData
     const weeklyFournisseurs = chartData.reduce((acc, curr) => acc + curr.Fournisseurs, 0);
     const weeklyPersonnel = chartData.reduce((acc, curr) => acc + curr.Personnel, 0);
     const weeklyRevenu = chartData.reduce((acc, curr) => acc + curr.Revenu, 0);
+    const net = weeklyRevenu - weeklyFournisseurs - weeklyPersonnel;
 
-    doc.text("Résumé de la semaine :", 20, 50);
-    doc.setFontSize(12);
-    doc.text(`- Dépenses Fournisseurs : ${weeklyFournisseurs} DH`, 30, 60);
-    doc.text(`- Salaires du Personnel : ${weeklyPersonnel} DH`, 30, 70);
-    doc.text(`- Chiffre d'Affaire (Revenu) : ${weeklyRevenu} DH`, 30, 80);
-    doc.text(`- Bénéfice Net (Semaine) : ${weeklyRevenu - weeklyFournisseurs - weeklyPersonnel} DH`, 30, 90);
+    autoTable(doc, {
+      startY: 50,
+      head: [['Catégorie', 'Montant (DH)']],
+      body: [
+        ['Chiffre d\'Affaires (Revenus)', weeklyRevenu],
+        ['Dépenses Fournisseurs', weeklyFournisseurs],
+        ['Salaires du Personnel', weeklyPersonnel],
+        ['Total Dépenses', weeklyFournisseurs + weeklyPersonnel],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 12, cellPadding: 6 },
+      columnStyles: {
+        0: { fontStyle: 'bold', textColor: [30, 41, 59] },
+        1: { halign: 'right', textColor: [30, 41, 59] },
+      },
+    });
+
+    const finalY = (doc as any).lastAutoTable?.finalY || 100;
     
-    doc.text("Ce rapport inclut la synthèse globale. Les factures détaillées par fournisseur sont générées lors de la Clôture du Dimanche dans l'onglet Fournisseurs.", 20, 110, { maxWidth: 170 });
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(14, finalY + 10, pageWidth - 28, 20, 3, 3, 'FD');
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text('Bénéfice Net (Semaine) :', 20, finalY + 23);
     
+    const profitColor = net >= 0 ? [16, 185, 129] : [239, 68, 68];
+    doc.setTextColor(profitColor[0], profitColor[1], profitColor[2]);
+    doc.text(`${net} DH`, pageWidth - 20, finalY + 23, { align: 'right' });
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text("Ce rapport inclut la synthèse globale de la semaine. Les factures détaillées par", 20, finalY + 45);
+    doc.text("fournisseur sont générées lors de la Clôture du Dimanche dans l'onglet Fournisseurs.", 20, finalY + 50);
+
     exportPDF(doc, "Rapport_Hebdomadaire.pdf");
   };
 

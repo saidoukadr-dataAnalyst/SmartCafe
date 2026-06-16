@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Edit2, CheckCircle } from 'lucide-react';
 import { mockFixedExpenses } from '../mockData';
+import { moveToTrash } from '../trashHelper';
 import type { FixedExpense } from '../types';
 
 const categoryColors: Record<string, { bg: string; text: string }> = {
@@ -28,6 +29,7 @@ const Expenses: React.FC = () => {
   const [newAmount, setNewAmount] = useState('');
   const [newMonth, setNewMonth] = useState('');
   const [newCategory, setNewCategory] = useState('Autres');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
@@ -44,25 +46,66 @@ const Expenses: React.FC = () => {
       const dateObj = new Date(newMonth + '-01');
       const formattedMonth = dateObj.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
       
-      setExpenses([...expenses, {
-        id: Date.now().toString(),
-        type: newType,
-        amount: parseFloat(newAmount),
-        month: formattedMonth,
-        category: newCategory
-      }]);
-      setNewType('');
-      setNewAmount('');
-      setNewMonth('');
-      setNewCategory('Autres');
-      setShowModal(false);
+      if (editingId) {
+        setExpenses(expenses.map(e => e.id === editingId ? {
+          ...e,
+          type: newType,
+          amount: parseFloat(newAmount),
+          month: formattedMonth,
+          category: newCategory
+        } : e));
+      } else {
+        setExpenses([...expenses, {
+          id: Date.now().toString(),
+          type: newType,
+          amount: parseFloat(newAmount),
+          month: formattedMonth,
+          category: newCategory
+        }]);
+      }
+      resetForm();
     } else {
       showToast("Veuillez remplir tous les champs.", "error");
     }
   };
 
+  const resetForm = () => {
+    setNewType('');
+    setNewAmount('');
+    setNewMonth('');
+    setNewCategory('Autres');
+    setEditingId(null);
+    setShowModal(false);
+  };
+
+  const handleEditExpense = (expense: FixedExpense) => {
+    setNewType(expense.type);
+    setNewAmount(expense.amount.toString());
+    
+    // We need to convert formattedMonth back to YYYY-MM if possible, or just require re-entry if complex.
+    // For simplicity, let's try to map it back or just leave it empty if parsing is hard.
+    // Actually, HTML input type="month" expects YYYY-MM.
+    // Let's create a mapping or just set it to current month.
+    const monthMap: Record<string, string> = {
+      'Janvier': '01', 'Février': '02', 'Mars': '03', 'Avril': '04', 'Mai': '05', 'Juin': '06',
+      'Juillet': '07', 'Août': '08', 'Septembre': '09', 'Octobre': '10', 'Novembre': '11', 'Décembre': '12'
+    };
+    const parts = expense.month.split(' ');
+    let yyyymm = '';
+    if (parts.length === 2 && monthMap[parts[0]]) {
+      yyyymm = `${parts[1]}-${monthMap[parts[0]]}`;
+    }
+    setNewMonth(yyyymm);
+    
+    setNewCategory(expense.category || 'Autres');
+    setEditingId(expense.id);
+    setShowModal(true);
+  };
+
   const handleDeleteExpense = (id: string) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cette charge ?")) {
+      const expense = expenses.find(e => e.id === id);
+      if (expense) moveToTrash('fixed_expense', expense);
       setExpenses(expenses.filter(e => e.id !== id));
     }
   };
@@ -71,7 +114,7 @@ const Expenses: React.FC = () => {
     <div>
       <div className="page-header">
         <h1 className="page-title">Frais Fixes Mensuels</h1>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+        <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
           <Plus size={18} /> Ajouter une Charge
         </button>
       </div>
@@ -109,14 +152,24 @@ const Expenses: React.FC = () => {
                   <td>{expense.month}</td>
                   <td><strong>{expense.amount} DH</strong></td>
                   <td>
-                    <button 
-                      className="btn btn-danger"
-                      onClick={() => handleDeleteExpense(expense.id)}
-                      title="Supprimer cette charge"
-                      style={{ padding: '0.25rem 0.5rem' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button 
+                        className="btn btn-outline"
+                        onClick={() => handleEditExpense(expense)}
+                        title="Modifier cette charge"
+                        style={{ padding: '0.25rem 0.5rem' }}
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button 
+                        className="btn btn-danger"
+                        onClick={() => handleDeleteExpense(expense.id)}
+                        title="Supprimer cette charge"
+                        style={{ padding: '0.25rem 0.5rem' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -137,9 +190,9 @@ const Expenses: React.FC = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay" onClick={resetForm}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem' }}>Nouvelle Charge Récurrente</h2>
+            <h2 style={{ marginBottom: '1.5rem' }}>{editingId ? "Modifier la Charge" : "Nouvelle Charge Récurrente"}</h2>
             <div className="form-group">
               <label className="form-label">Type (ex: Loyer, Internet...)</label>
               <input 
@@ -184,8 +237,8 @@ const Expenses: React.FC = () => {
               />
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-              <button className="btn btn-outline" onClick={() => setShowModal(false)}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleAddExpense}>Ajouter</button>
+              <button className="btn btn-outline" onClick={resetForm}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleAddExpense}>{editingId ? "Enregistrer" : "Ajouter"}</button>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, CheckCircle, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle, Trash2, Edit2 } from 'lucide-react';
 import { mockEmployees } from '../mockData';
+import { moveToTrash } from '../trashHelper';
 import type { Employee } from '../types';
 
 // Helper: format Date to local YYYY-MM-DD string without timezone shifting
@@ -25,6 +26,7 @@ const Staff: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState('');
   const [newSalary, setNewSalary] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
@@ -51,23 +53,47 @@ const Staff: React.FC = () => {
 
   const handleAddEmployee = () => {
     if (newName.trim() && newRole.trim() && newSalary) {
-      setEmployees([...employees, {
-        id: Date.now().toString(),
-        name: newName,
-        role: newRole,
-        weeklySalary: parseFloat(newSalary)
-      }]);
-      setNewName('');
-      setNewRole('');
-      setNewSalary('');
-      setShowModal(false);
+      if (editingId) {
+        setEmployees(employees.map(e => e.id === editingId ? {
+          ...e,
+          name: newName,
+          role: newRole,
+          weeklySalary: parseFloat(newSalary)
+        } : e));
+      } else {
+        setEmployees([...employees, {
+          id: Date.now().toString(),
+          name: newName,
+          role: newRole,
+          weeklySalary: parseFloat(newSalary)
+        }]);
+      }
+      resetForm();
     } else {
       showToast("Veuillez remplir tous les champs.", "error");
     }
   };
 
+  const resetForm = () => {
+    setNewName('');
+    setNewRole('');
+    setNewSalary('');
+    setEditingId(null);
+    setShowModal(false);
+  };
+
+  const handleEditEmployee = (employee: Employee) => {
+    setNewName(employee.name);
+    setNewRole(employee.role);
+    setNewSalary(employee.weeklySalary.toString());
+    setEditingId(employee.id);
+    setShowModal(true);
+  };
+
   const handleDeleteEmployee = (id: string) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cet employé ?")) {
+      const employee = employees.find(e => e.id === id);
+      if (employee) moveToTrash('employee', employee);
       setEmployees(employees.filter(e => e.id !== id));
     }
   };
@@ -77,7 +103,7 @@ const Staff: React.FC = () => {
       <div className="page-header">
         <h1 className="page-title">Gestion du Personnel</h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className="btn btn-outline" onClick={() => setShowModal(true)}>
+          <button className="btn btn-outline" onClick={() => { resetForm(); setShowModal(true); }}>
             <Plus size={18} /> Ajouter Employé
           </button>
           <button className="btn btn-primary" onClick={handleValidationPaie}>
@@ -115,6 +141,14 @@ const Staff: React.FC = () => {
                       {employee.status || 'En attente'}
                     </span>
                     <button 
+                      className="btn btn-outline"
+                      onClick={() => handleEditEmployee(employee)}
+                      title="Modifier cet employé"
+                      style={{ padding: '0.25rem 0.5rem' }}
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button 
                       className="btn btn-danger"
                       onClick={() => handleDeleteEmployee(employee.id)}
                       title="Supprimer cet employé"
@@ -141,9 +175,9 @@ const Staff: React.FC = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay" onClick={resetForm}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem' }}>Nouvel Employé</h2>
+            <h2 style={{ marginBottom: '1.5rem' }}>{editingId ? "Modifier l'Employé" : "Nouvel Employé"}</h2>
             <div className="form-group">
               <label className="form-label">Nom complet</label>
               <input 
@@ -176,8 +210,8 @@ const Staff: React.FC = () => {
               />
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-              <button className="btn btn-outline" onClick={() => setShowModal(false)}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleAddEmployee}>Sauvegarder</button>
+              <button className="btn btn-outline" onClick={resetForm}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleAddEmployee}>{editingId ? "Enregistrer" : "Sauvegarder"}</button>
             </div>
           </div>
         </div>

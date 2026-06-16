@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download, CheckCircle } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { exportPDF } from '../pdfHelper';
 import {
   BarChart,
@@ -150,20 +151,54 @@ const Reports: React.FC = () => {
 
   const handleExport = () => {
     const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text(`Rapport Mensuel (${currentMonth.name})`, 20, 20);
-    doc.setFontSize(14);
-    doc.text(`Date : ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
+    const pageWidth = doc.internal.pageSize.width;
     
-    doc.text(`Bilan du mois de ${currentMonth.name} :`, 20, 50);
+    // Titre centré
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`📊 Rapport Mensuel : ${currentMonth.name}`, pageWidth / 2, 20, { align: 'center' });
+
     doc.setFontSize(12);
-    doc.text(`- Revenus générés : ${currentMonth.Revenu} DH`, 30, 60);
-    doc.text(`- Dépenses Fournisseurs : ${currentMonth.Fournisseurs} DH`, 30, 70);
-    doc.text(`- Salaires du Personnel : ${currentMonth.Personnel} DH`, 30, 80);
-    doc.text(`- Frais Fixes : ${currentMonth.FraisFixes} DH`, 30, 90);
-    doc.text(`- Total Dépenses : ${currentMonth.Fournisseurs + currentMonth.Personnel + currentMonth.FraisFixes} DH`, 30, 105);
-    doc.text(`- Bénéfice Net : ${profitCurrent} DH`, 30, 115);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Édité le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 28, { align: 'center' });
+
+    // Table for details
+    autoTable(doc, {
+      startY: 40,
+      head: [['Catégorie', 'Montant (DH)']],
+      body: [
+        ['Revenus générés', currentMonth.Revenu],
+        ['Dépenses Fournisseurs', currentMonth.Fournisseurs],
+        ['Salaires du Personnel', currentMonth.Personnel],
+        ['Frais Fixes', currentMonth.FraisFixes],
+        ['Total Dépenses', currentMonth.Fournisseurs + currentMonth.Personnel + currentMonth.FraisFixes],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 12, cellPadding: 6 },
+      columnStyles: {
+        0: { fontStyle: 'bold', textColor: [30, 41, 59] },
+        1: { halign: 'right', textColor: [30, 41, 59] },
+      },
+    });
+
+    // Rounded box for Total Net
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
     
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(14, finalY + 10, pageWidth - 28, 20, 3, 3, 'FD');
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text('Bénéfice Net :', 20, finalY + 23);
+    
+    const profitColor = profitCurrent >= 0 ? [16, 185, 129] : [239, 68, 68];
+    doc.setTextColor(profitColor[0], profitColor[1], profitColor[2]);
+    doc.text(`${profitCurrent} DH`, pageWidth - 20, finalY + 23, { align: 'right' });
+
     exportPDF(doc, `Rapport_Mensuel_${currentMonth.name}.pdf`);
   };
 
@@ -173,31 +208,47 @@ const Reports: React.FC = () => {
       return;
     }
     const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text(`Historique Hebdomadaire`, 20, 20);
-    doc.setFontSize(14);
-    doc.text(`Édité le : ${new Date().toLocaleDateString('fr-FR')}`, 20, 30);
+    const pageWidth = doc.internal.pageSize.width;
     
-    let yOffset = 50;
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`📅 Historique Hebdomadaire`, pageWidth / 2, 20, { align: 'center' });
+    
     doc.setFontSize(12);
-    
-    weeklyDataState.forEach((week) => {
-      if (yOffset > 270) {
-        doc.addPage();
-        yOffset = 20;
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Édité le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 28, { align: 'center' });
+
+    const tableData = weeklyDataState.map(w => [
+      w.name, 
+      `${w.Revenu} DH`, 
+      `${w.Fournisseurs} DH`, 
+      `${w.Personnel} DH`, 
+      `${w.BeneficeNet} DH`
+    ]);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [['Semaine', 'Revenus', 'Fournisseurs', 'Personnel', 'Bénéfice Net']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 10, cellPadding: 5 },
+      columnStyles: {
+        1: { halign: 'right' },
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right', fontStyle: 'bold' }
+      },
+      didParseCell: function (data) {
+        if (data.section === 'body' && data.column.index === 4) {
+          const val = parseFloat((data.cell.raw || '').toString());
+          if (val >= 0) {
+            data.cell.styles.textColor = [16, 185, 129];
+          } else {
+            data.cell.styles.textColor = [239, 68, 68];
+          }
+        }
       }
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Semaine : ${week.name}`, 20, yOffset);
-      doc.setFont('helvetica', 'normal');
-      yOffset += 8;
-      doc.text(`- Revenus : ${week.Revenu} DH`, 30, yOffset);
-      yOffset += 8;
-      doc.text(`- Dépenses Fournisseurs : ${week.Fournisseurs} DH`, 30, yOffset);
-      yOffset += 8;
-      doc.text(`- Salaires Personnel : ${week.Personnel} DH`, 30, yOffset);
-      yOffset += 8;
-      doc.text(`- Bénéfice Net : ${week.BeneficeNet} DH`, 30, yOffset);
-      yOffset += 15;
     });
 
     exportPDF(doc, `Historique_Hebdomadaire.pdf`);

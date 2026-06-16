@@ -7,6 +7,7 @@ import Income from './pages/Income';
 import Staff from './pages/Staff';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
+import Trash from './pages/Trash';
 import { Menu, Coffee } from 'lucide-react';
 import LoginScreen from './components/LoginScreen';
 import ActivationScreen from './components/ActivationScreen';
@@ -64,6 +65,7 @@ const App: React.FC = () => {
             <Route path="/staff" element={<Staff />} />
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/trash" element={<Trash />} />
           </Routes>
         </main>
       </div>
