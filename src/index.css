@@ -35,7 +35,7 @@
 }
 
 /* Manual Dark Mode selectors */
-:root.dark, body.dark {
+:root.dark {
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
   --bg-sidebar: #020617;
@@ -53,7 +53,7 @@
 
 /* Fallback to system preference if no manual override is active */
 @media (prefers-color-scheme: dark) {
-  :root:not(.light), body:not(.light) {
+  :root:not(.light) {
     --bg-primary: #0f172a;
     --bg-secondary: #1e293b;
     --bg-sidebar: #020617;

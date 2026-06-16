@@ -156,7 +156,7 @@ const Reports: React.FC = () => {
     // Titre centré
     doc.setFontSize(22);
     doc.setTextColor(30, 41, 59);
-    doc.text(`📊 Rapport Mensuel : ${currentMonth.name}`, pageWidth / 2, 20, { align: 'center' });
+    doc.text(`Rapport Mensuel : ${currentMonth.name}`, pageWidth / 2, 20, { align: 'center' });
 
     doc.setFontSize(12);
     doc.setTextColor(100, 116, 139);
@@ -212,7 +212,7 @@ const Reports: React.FC = () => {
     
     doc.setFontSize(22);
     doc.setTextColor(30, 41, 59);
-    doc.text(`📅 Historique Hebdomadaire`, pageWidth / 2, 20, { align: 'center' });
+    doc.text(`Historique Hebdomadaire`, pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(12);
     doc.setTextColor(100, 116, 139);

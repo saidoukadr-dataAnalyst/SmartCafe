@@ -168,7 +168,7 @@ const Suppliers: React.FC = () => {
     
     doc.setFontSize(22);
     doc.setTextColor(30, 41, 59);
-    doc.text("📦 Historique des Livraisons", pageWidth / 2, 20, { align: 'center' });
+    doc.text("Historique des Livraisons", pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(12);
     doc.setTextColor(100, 116, 139);
@@ -348,7 +348,7 @@ const Suppliers: React.FC = () => {
 
       doc.setFontSize(22);
       doc.setTextColor(30, 41, 59);
-      doc.text(`📄 Facture / Rapport Hebdomadaire`, pageWidth / 2, 20, { align: 'center' });
+      doc.text(`Facture / Rapport Hebdomadaire`, pageWidth / 2, 20, { align: 'center' });
       
       doc.setFontSize(12);
       doc.setTextColor(100, 116, 139);

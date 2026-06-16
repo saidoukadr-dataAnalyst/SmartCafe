@@ -172,7 +172,7 @@ const Dashboard: React.FC = () => {
 
     doc.setFontSize(22);
     doc.setTextColor(30, 41, 59);
-    doc.text(`📊 Rapport Hebdomadaire Global`, pageWidth / 2, 20, { align: 'center' });
+    doc.text(`Rapport Hebdomadaire Global`, pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(14);
     doc.setTextColor(100, 116, 139);
