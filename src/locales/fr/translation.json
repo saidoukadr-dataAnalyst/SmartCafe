@@ -1,0 +1,89 @@
+{
+  "sidebar": {
+    "dashboard": "Tableau de Bord",
+    "suppliers": "Fournisseurs & Achats",
+    "income": "Recettes (Caisse)",
+    "staff": "Personnel",
+    "expenses": "Frais Fixes",
+    "reports": "Rapports & Bilan",
+    "trash": "Corbeille",
+    "security": "Sécurité",
+    "logout": "Déconnexion",
+    "lightMode": "Mode Clair",
+    "darkMode": "Mode Sombre"
+  },
+  "common": {
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "search": "Rechercher...",
+    "amount": "Montant (DH)",
+    "date": "Date",
+    "label": "Libellé",
+    "total": "Total",
+    "actions": "Actions",
+    "close": "Fermer"
+  },
+  "dashboard": {
+    "title": "Tableau de Bord",
+    "weekSummary": "Bilan de la Semaine Courante",
+    "revenue": "Chiffre d'Affaires (Revenus)",
+    "supplierExpenses": "Dépenses Fournisseurs",
+    "staffSalaries": "Salaires du Personnel",
+    "totalExpenses": "Total Dépenses",
+    "netProfit": "Bénéfice Net (Semaine)",
+    "exportWeekly": "Exporter Rapport Hebdo",
+    "quickActions": "Actions Rapides",
+    "pendingDebts": "Dettes en attente"
+  },
+  "suppliers": {
+    "title": "Gestion des Fournisseurs",
+    "addSupplier": "Nouveau Fournisseur",
+    "closeWeek": "Clôturer la Semaine",
+    "exportHistory": "Exporter Historique",
+    "supplier": "Fournisseur",
+    "contact": "Contact",
+    "amountOwed": "Montant Dû",
+    "newDelivery": "Nouvelle Livraison",
+    "paymentAdvance": "Paiement / Avance",
+    "amountPaid": "Montant Payé",
+    "remainingOwed": "Reste à Payer",
+    "deliveryHistory": "Historique des livraisons"
+  },
+  "income": {
+    "title": "Recettes (Caisse)",
+    "addIncome": "Ajouter Recette"
+  },
+  "staff": {
+    "title": "Gestion du Personnel",
+    "addEmployee": "Ajouter Employé",
+    "validatePay": "Valider la Paie (Semaine)",
+    "name": "Nom",
+    "role": "Rôle",
+    "weeklySalary": "Salaire Hebdomadaire",
+    "paymentStatus": "Statut Paiement",
+    "paid": "Payé",
+    "pending": "En attente"
+  },
+  "expenses": {
+    "title": "Frais Fixes",
+    "addExpense": "Nouvelle Dépense"
+  },
+  "reports": {
+    "title": "Rapports & Bilan",
+    "exportMonthly": "Exporter Rapport Mensuel",
+    "weeklyHistory": "Historique Hebdomadaire",
+    "monthlySummary": "Synthèse Mensuelle",
+    "month": "Mois",
+    "netProfit": "Bénéfice Net"
+  },
+  "trash": {
+    "title": "Corbeille Globale",
+    "emptyTrash": "Vider la corbeille",
+    "restore": "Restaurer",
+    "deletePermanently": "Supprimer définitivement",
+    "emptyMessage": "La corbeille est vide."
+  }
+}

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon, X, Lock, LogOut, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon, X, Lock, LogOut, Trash2, Globe } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
+import { useTranslation } from 'react-i18next';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const { t, i18n } = useTranslation();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -32,6 +34,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'fr' ? 'ar' : 'fr';
+    i18n.changeLanguage(newLang);
   };
 
   const handleLogout = () => {
@@ -64,87 +71,57 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
         <nav className="sidebar-nav">
-          <NavLink to="/" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose} end>
+          <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <LayoutDashboard size={20} />
-            <span>Tableau de Bord</span>
+            <span>{t('sidebar.dashboard')}</span>
           </NavLink>
-          <NavLink to="/suppliers" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
+          
+          <NavLink to="/suppliers" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <ShoppingCart size={20} />
-            <span>Fournisseurs</span>
+            <span>{t('sidebar.suppliers')}</span>
           </NavLink>
-          <NavLink to="/income" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
-            <Wallet size={20} />
-            <span>Revenus</span>
-          </NavLink>
-          <NavLink to="/staff" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
-            <Users size={20} />
-            <span>Personnel</span>
-          </NavLink>
-          <NavLink to="/expenses" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
+
+          <NavLink to="/income" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <Banknote size={20} />
-            <span>Frais Fixes</span>
+            <span>{t('sidebar.income')}</span>
           </NavLink>
-          <NavLink to="/reports" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
+          
+          <NavLink to="/staff" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <Users size={20} />
+            <span>{t('sidebar.staff')}</span>
+          </NavLink>
+          
+          <NavLink to="/expenses" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <Wallet size={20} />
+            <span>{t('sidebar.expenses')}</span>
+          </NavLink>
+          
+          <NavLink to="/reports" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <FileText size={20} />
-            <span>Rapport Mensuel</span>
+            <span>{t('sidebar.reports')}</span>
           </NavLink>
-          <NavLink to="/trash" className={({isActive}) => isActive ? "nav-item active" : "nav-item"} onClick={onClose}>
+
+          <NavLink to="/trash" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <Trash2 size={20} />
-            <span>Corbeille</span>
+            <span>{t('sidebar.trash')}</span>
           </NavLink>
-          <button 
-            onClick={() => {
-              setIsPasswordModalOpen(true);
-              onClose();
-            }}
-            className="nav-item"
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              width: '100%', 
-              textAlign: 'left', 
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: 'inherit'
-            }}
-          >
-            <Lock size={20} />
-            <span>Sécurité</span>
-          </button>
         </nav>
-        <div className="sidebar-footer" style={{ padding: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <button 
-            onClick={toggleTheme} 
-            className="btn btn-outline" 
-            style={{ 
-              width: '100%', 
-              justifyContent: 'center', 
-              gap: '0.75rem', 
-              color: 'var(--text-sidebar)', 
-              borderColor: 'rgba(255,255,255,0.1)',
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              cursor: 'pointer'
-            }}
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            <span>{theme === 'dark' ? 'Mode Clair' : 'Mode Sombre'}</span>
+        <div className="sidebar-actions">
+          <button className="action-btn" onClick={() => { onClose(); setIsPasswordModalOpen(true); }}>
+            <Lock size={18} />
+            <span>{t('sidebar.security')}</span>
           </button>
-          <button 
-            onClick={handleLogout} 
-            className="btn btn-outline" 
-            style={{ 
-              width: '100%', 
-              justifyContent: 'center', 
-              gap: '0.75rem', 
-              color: '#ef4444', 
-              borderColor: 'rgba(239, 68, 68, 0.2)',
-              backgroundColor: 'rgba(239, 68, 68, 0.05)',
-              cursor: 'pointer',
-              marginTop: '0.75rem'
-            }}
-          >
+          <button className="action-btn" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            <span>{theme === 'dark' ? t('sidebar.lightMode') : t('sidebar.darkMode')}</span>
+          </button>
+          <button className="action-btn" onClick={toggleLanguage}>
+            <Globe size={18} />
+            <span>{i18n.language === 'fr' ? 'العربية' : 'Français'}</span>
+          </button>
+          <button className="action-btn danger" onClick={handleLogout} style={{ marginTop: '0.75rem' }}>
             <LogOut size={18} />
-            <span>Verrouiller</span>
+            <span>{t('sidebar.logout')}</span>
           </button>
         </div>
       </div>

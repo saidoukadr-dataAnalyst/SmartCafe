@@ -1,0 +1,89 @@
+{
+  "sidebar": {
+    "dashboard": "لوحة القيادة",
+    "suppliers": "الموردين والمشتريات",
+    "income": "المداخيل (الصندوق)",
+    "staff": "العمال والموظفين",
+    "expenses": "مصاريف ثابتة",
+    "reports": "التقارير والحصيلة",
+    "trash": "سلة المهملات",
+    "security": "الحماية",
+    "logout": "تسجيل الخروج",
+    "lightMode": "الوضع الفاتح",
+    "darkMode": "الوضع الداكن"
+  },
+  "common": {
+    "add": "إضافة",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "search": "بحث...",
+    "amount": "المبلغ (درهم)",
+    "date": "التاريخ",
+    "label": "البيان",
+    "total": "المجموع",
+    "actions": "إجراءات",
+    "close": "إغلاق"
+  },
+  "dashboard": {
+    "title": "لوحة القيادة",
+    "weekSummary": "حصيلة الأسبوع الحالي",
+    "revenue": "رقم المعاملات (المداخيل)",
+    "supplierExpenses": "مصاريف الموردين",
+    "staffSalaries": "أجور العمال",
+    "totalExpenses": "مجموع المصاريف",
+    "netProfit": "الربح الصافي (للأسبوع)",
+    "exportWeekly": "استخراج تقرير الأسبوع",
+    "quickActions": "إجراءات سريعة",
+    "pendingDebts": "الديون المعلقة"
+  },
+  "suppliers": {
+    "title": "إدارة الموردين",
+    "addSupplier": "مورد جديد",
+    "closeWeek": "إغلاق الأسبوع",
+    "exportHistory": "استخراج السجل",
+    "supplier": "المورد",
+    "contact": "رقم الهاتف",
+    "amountOwed": "المبلغ المستحق",
+    "newDelivery": "توصيل جديد (سلعة)",
+    "paymentAdvance": "دفع / التسبيق",
+    "amountPaid": "المبلغ المدفوع",
+    "remainingOwed": "الباقي أداؤه",
+    "deliveryHistory": "سجل التوصيلات"
+  },
+  "income": {
+    "title": "المداخيل (الصندوق)",
+    "addIncome": "إضافة مدخول"
+  },
+  "staff": {
+    "title": "إدارة العمال",
+    "addEmployee": "إضافة عامل",
+    "validatePay": "تأكيد الأداء (الأسبوع)",
+    "name": "الاسم",
+    "role": "المنصب / الدور",
+    "weeklySalary": "الأجرة الأسبوعية",
+    "paymentStatus": "حالة الأداء",
+    "paid": "تم الأداء",
+    "pending": "في الانتظار"
+  },
+  "expenses": {
+    "title": "مصاريف ثابتة",
+    "addExpense": "مصروف جديد"
+  },
+  "reports": {
+    "title": "التقارير والحصيلة",
+    "exportMonthly": "استخراج التقرير الشهري",
+    "weeklyHistory": "السجل الأسبوعي",
+    "monthlySummary": "الحصيلة الشهرية",
+    "month": "الشهر",
+    "netProfit": "الربح الصافي"
+  },
+  "trash": {
+    "title": "سلة المهملات",
+    "emptyTrash": "إفراغ السلة",
+    "restore": "استرجاع",
+    "deletePermanently": "حذف نهائي",
+    "emptyMessage": "السلة فارغة."
+  }
+}

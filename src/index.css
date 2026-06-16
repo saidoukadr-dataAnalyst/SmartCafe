@@ -100,7 +100,7 @@ body {
 .sidebar {
   position: fixed;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   bottom: 0;
   width: 260px;
   background-color: var(--bg-sidebar);
@@ -157,7 +157,7 @@ body {
 .nav-item.active {
   background-color: rgba(255, 255, 255, 0.1);
   color: var(--text-sidebar-active);
-  border-left: 4px solid var(--accent-primary);
+  border-inline-start: 4px solid var(--accent-primary);
 }
 
 /* Main Content */
@@ -172,8 +172,8 @@ body {
 .app-header {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   height: 64px;
   background-color: var(--header-bg);
   backdrop-filter: blur(12px);
@@ -190,7 +190,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-left: 1rem;
+  margin-inline-start: 1rem;
 }
 
 .header-logo {
@@ -228,8 +228,8 @@ body {
   display: block;
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(2px);
@@ -435,7 +435,7 @@ body {
 
 .table th, .table td {
   padding: 1rem 1.5rem;
-  text-align: left;
+  text-align: start;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -505,7 +505,7 @@ body {
 /* Modals & Forms */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; inset-inline-start: 0; inset-inline-end: 0; bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
@@ -586,7 +586,7 @@ body {
   padding: 1rem;
   position: fixed;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   z-index: 9999;
 }
 
@@ -659,7 +659,7 @@ body {
   border-radius: var(--radius-md);
   margin-bottom: 1.25rem;
   font-size: 0.875rem;
-  text-align: left;
+  text-align: start;
   font-weight: 500;
 }
 
@@ -677,7 +677,7 @@ body {
 
 .login-input-icon {
   position: absolute;
-  left: 1rem;
+  inset-inline-start: 1rem;
   color: var(--text-secondary);
 }
 
@@ -702,7 +702,7 @@ body {
 
 .login-input-toggle {
   position: absolute;
-  right: 1rem;
+  inset-inline-end: 1rem;
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -779,7 +779,7 @@ body {
   padding: 1rem;
   position: fixed;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   z-index: 99999;
 }
 
@@ -831,7 +831,7 @@ body {
   margin-bottom: 1.5rem;
   font-size: 0.875rem;
   font-weight: 500;
-  text-align: left;
+  text-align: start;
 }
 
 .activation-success-alert {
@@ -858,7 +858,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 1rem;
-  text-align: left;
+  text-align: start;
 }
 
 .device-id-label {
@@ -924,11 +924,11 @@ body {
   .table-container {
     width: calc(100% + 2rem);
     max-width: calc(100% + 2rem);
-    margin-left: -1rem;
-    margin-right: -1rem;
+    margin-inline-start: -1rem;
+    margin-inline-end: -1rem;
     border-radius: 0;
-    border-left: none;
-    border-right: none;
+    border-inline-start: none;
+    border-inline-end: none;
   }
   
   .btn, .form-input {

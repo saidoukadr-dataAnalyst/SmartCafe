@@ -8,6 +8,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { exportPDF } from '../pdfHelper';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart,
   Bar,
@@ -41,6 +42,7 @@ const getMondayOfWeek = (): Date => {
 
 
 const Dashboard: React.FC = () => {
+  const { t } = useTranslation();
   const [weeklyIncome, setWeeklyIncome] = React.useState(0);
   const [weeklyExpenses, setWeeklyExpenses] = React.useState(0);
   const [chartData, setChartData] = React.useState<any[]>([]);
@@ -235,9 +237,9 @@ const Dashboard: React.FC = () => {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Tableau de Bord</h1>
+        <h1 className="page-title">{t('dashboard.title')}</h1>
         <button className="btn btn-primary" onClick={handleExport}>
-          <Download size={18} /> Exporter Rapport Hebdo
+          <Download size={18} /> {t('dashboard.exportWeekly')}
         </button>
       </div>
 
@@ -247,8 +249,20 @@ const Dashboard: React.FC = () => {
             <TrendingUp size={24} />
           </div>
           <div className="kpi-content">
-            <div className="kpi-label">Revenu (Cette semaine)</div>
+            <div className="kpi-label">{t('dashboard.revenue')}</div>
             <div className="kpi-value" style={{ color: 'var(--success)' }}>{weeklyIncome} DH</div>
+          </div>
+        </div>
+
+        <div className="kpi-card" style={{ flex: 1 }}>
+          <div className="kpi-icon" style={{ color: 'var(--warning)', backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+            <Users size={24} />
+          </div>
+          <div className="kpi-content">
+            <div className="kpi-label">{t('dashboard.staffSalaries')}</div>
+            <div className="kpi-value" style={{ color: 'var(--warning)' }}>
+              {payroll.reduce((acc, p) => acc + p.amount, 0)} DH
+            </div>
           </div>
         </div>
         
@@ -257,18 +271,20 @@ const Dashboard: React.FC = () => {
             <ShoppingCart size={24} />
           </div>
           <div className="kpi-content">
-            <div className="kpi-label">Dépenses (Cette semaine)</div>
+            <div className="kpi-label">{t('dashboard.supplierExpenses')}</div>
             <div className="kpi-value" style={{ color: 'var(--danger)' }}>{weeklyExpenses} DH</div>
           </div>
         </div>
 
         <div className="kpi-card" style={{ flex: 1 }}>
-          <div className="kpi-icon" style={{ color: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)' }}>
+          <div className="kpi-icon" style={{ color: 'var(--accent-primary)', backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
             <DollarSign size={24} />
           </div>
           <div className="kpi-content">
-            <div className="kpi-label">Bénéfice Net (Cette semaine)</div>
-            <div className="kpi-value" style={{ color: '#8b5cf6' }}>{netProfit} DH</div>
+            <div className="kpi-label">{t('dashboard.netProfit')}</div>
+            <div className="kpi-value" style={{ color: netProfit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+              {netProfit} DH
+            </div>
           </div>
         </div>
       </div>
