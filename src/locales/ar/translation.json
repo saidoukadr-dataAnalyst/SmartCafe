@@ -47,9 +47,6 @@
     "contact": "رقم الهاتف",
     "amountOwed": "المبلغ المستحق",
     "newDelivery": "توصيل جديد (سلعة)",
-    "paymentAdvance": "دفع / التسبيق",
-    "amountPaid": "المبلغ المدفوع",
-    "remainingOwed": "الباقي أداؤه",
     "deliveryHistory": "سجل التوصيلات"
   },
   "income": {

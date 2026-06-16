@@ -255,18 +255,6 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="kpi-card" style={{ flex: 1 }}>
-          <div className="kpi-icon" style={{ color: 'var(--warning)', backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
-            <Users size={24} />
-          </div>
-          <div className="kpi-content">
-            <div className="kpi-label">{t('dashboard.staffSalaries')}</div>
-            <div className="kpi-value" style={{ color: 'var(--warning)' }}>
-              {payroll.reduce((acc, p) => acc + p.amount, 0)} DH
-            </div>
-          </div>
-        </div>
-        
-        <div className="kpi-card" style={{ flex: 1 }}>
           <div className="kpi-icon" style={{ color: 'var(--danger)', backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
             <ShoppingCart size={24} />
           </div>

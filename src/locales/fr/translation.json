@@ -47,9 +47,6 @@
     "contact": "Contact",
     "amountOwed": "Montant Dû",
     "newDelivery": "Nouvelle Livraison",
-    "paymentAdvance": "Paiement / Avance",
-    "amountPaid": "Montant Payé",
-    "remainingOwed": "Reste à Payer",
     "deliveryHistory": "Historique des livraisons"
   },
   "income": {
