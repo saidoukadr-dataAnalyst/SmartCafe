@@ -221,5 +221,20 @@
     "october": "Octobre",
     "november": "Novembre",
     "december": "Décembre"
+  },
+  "security": {
+    "title": "Modifier le Mot de Passe",
+    "currentPassword": "Mot de passe actuel",
+    "currentPasswordPlaceholder": "Saisissez votre mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "newPasswordPlaceholder": "Au moins 4 caractères",
+    "confirmNewPassword": "Confirmez le nouveau mot de passe",
+    "confirmNewPasswordPlaceholder": "Répétez le nouveau mot de passe",
+    "successMessage": "Mot de passe modifié avec succès !",
+    "autoCloseMessage": "Ce modal va se fermer automatiquement...",
+    "errorFillFields": "Veuillez remplir tous les champs.",
+    "errorIncorrectCurrent": "Le mot de passe actuel est incorrect.",
+    "errorMinLength": "Le nouveau mot de passe doit contenir au moins 4 caractères.",
+    "errorMismatch": "Le nouveau mot de passe et sa confirmation ne correspondent pas."
   }
 }

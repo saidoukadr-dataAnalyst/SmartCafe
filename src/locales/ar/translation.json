@@ -221,5 +221,20 @@
     "october": "أكتوبر",
     "november": "نوفمبر",
     "december": "ديسمبر"
+  },
+  "security": {
+    "title": "تعديل كلمة المرور",
+    "currentPassword": "كلمة المرور الحالية",
+    "currentPasswordPlaceholder": "أدخل كلمة المرور الحالية",
+    "newPassword": "كلمة المرور الجديدة",
+    "newPasswordPlaceholder": "4 رموز على الأقل",
+    "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+    "confirmNewPasswordPlaceholder": "أعد كتابة كلمة المرور الجديدة",
+    "successMessage": "تم تعديل كلمة المرور بنجاح!",
+    "autoCloseMessage": "ستغلق هذه النافذة تلقائياً...",
+    "errorFillFields": "يرجى ملء جميع الخانات.",
+    "errorIncorrectCurrent": "كلمة المرور الحالية غير صحيحة.",
+    "errorMinLength": "يجب أن تتكون كلمة المرور الجديدة من 4 رموز على الأقل.",
+    "errorMismatch": "كلمة المرور الجديدة وتأكيدها غير متطابقين."
   }
 }

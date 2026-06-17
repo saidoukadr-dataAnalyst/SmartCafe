@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldAlert, X, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -7,6 +8,7 @@ interface ChangePasswordModalProps {
 }
 
 const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -22,26 +24,26 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
     // Basic Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('Veuillez remplir tous les champs.');
+      setError(t('security.errorFillFields'));
       return;
     }
 
     // Verify current password
     const savedPassword = localStorage.getItem('app_password');
     if (currentPassword !== savedPassword) {
-      setError('Le mot de passe actuel est incorrect.');
+      setError(t('security.errorIncorrectCurrent'));
       return;
     }
 
     // Validate new password length
     if (newPassword.length < 4) {
-      setError('Le nouveau mot de passe doit contenir au moins 4 caractères.');
+      setError(t('security.errorMinLength'));
       return;
     }
 
     // Verify match
     if (newPassword !== confirmPassword) {
-      setError('Le nouveau mot de passe et sa confirmation ne correspondent pas.');
+      setError(t('security.errorMismatch'));
       return;
     }
 
@@ -65,7 +67,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <ShieldAlert size={24} style={{ color: 'var(--accent-primary)' }} />
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Modifier le Mot de Passe</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{t('security.title')}</h3>
           </div>
           <button 
             onClick={onClose}
@@ -86,8 +88,8 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
             gap: '1rem'
           }}>
             <CheckCircle2 size={48} style={{ color: 'var(--success)' }} />
-            <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>Mot de passe modifié avec succès !</p>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Ce modal va se fermer automatiquement...</p>
+            <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>{t('security.successMessage')}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{t('security.autoCloseMessage')}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -106,37 +108,37 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
             )}
 
             <div className="form-group">
-              <label className="form-label">Mot de passe actuel</label>
+              <label className="form-label">{t('security.currentPassword')}</label>
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => { setError(''); setCurrentPassword(e.target.value); }}
                 className="form-input"
-                placeholder="Saisissez votre mot de passe actuel"
+                placeholder={t('security.currentPasswordPlaceholder')}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Nouveau mot de passe</label>
+              <label className="form-label">{t('security.newPassword')}</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => { setError(''); setNewPassword(e.target.value); }}
                 className="form-input"
-                placeholder="Au moins 4 caractères"
+                placeholder={t('security.newPasswordPlaceholder')}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Confirmez le nouveau mot de passe</label>
+              <label className="form-label">{t('security.confirmNewPassword')}</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => { setError(''); setConfirmPassword(e.target.value); }}
                 className="form-input"
-                placeholder="Répétez le nouveau mot de passe"
+                placeholder={t('security.confirmNewPasswordPlaceholder')}
                 required
               />
             </div>
@@ -148,14 +150,14 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                 className="btn btn-outline" 
                 style={{ flex: 1 }}
               >
-                Annuler
+                {t('common.cancel')}
               </button>
               <button 
                 type="submit" 
                 className="btn btn-primary" 
                 style={{ flex: 1 }}
               >
-                Enregistrer
+                {t('common.save')}
               </button>
             </div>
           </form>
