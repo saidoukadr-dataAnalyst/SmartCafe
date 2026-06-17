@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon, X, Lock, LogOut, Trash2, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon, X, Lock, LogOut, Trash2 } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 import { useTranslation } from 'react-i18next';
 
@@ -10,7 +10,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -34,11 +34,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'fr' ? 'ar' : 'fr';
-    i18n.changeLanguage(newLang);
   };
 
   const handleLogout = () => {
@@ -142,23 +137,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             <span>{theme === 'dark' ? t('sidebar.lightMode') : t('sidebar.darkMode')}</span>
-          </button>
-          
-          <button 
-            onClick={toggleLanguage} 
-            className="btn btn-outline" 
-            style={{ 
-              width: '100%', 
-              justifyContent: 'center', 
-              gap: '0.75rem', 
-              color: 'var(--text-sidebar)', 
-              borderColor: 'rgba(255,255,255,0.1)',
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              cursor: 'pointer'
-            }}
-          >
-            <Globe size={18} />
-            <span>{i18n.language === 'fr' ? 'العربية' : 'Français'}</span>
           </button>
           
           <button 

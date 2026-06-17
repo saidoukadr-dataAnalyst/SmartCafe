@@ -11,8 +11,10 @@ import Trash from './pages/Trash';
 import { Menu, Coffee } from 'lucide-react';
 import LoginScreen from './components/LoginScreen';
 import ActivationScreen from './components/ActivationScreen';
+import { useTranslation } from 'react-i18next';
 
 const App: React.FC = () => {
+  const { i18n } = useTranslation();
   const [isActivated, setIsActivated] = useState(() => {
     return localStorage.getItem('app_activated') === 'true';
   });
@@ -45,6 +47,54 @@ const App: React.FC = () => {
           <div className="header-brand">
             <Coffee className="header-logo" size={22} />
             <span className="header-title">SmartCafe</span>
+            
+            {/* Language Switcher */}
+            <div 
+              className="lang-switcher" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.2rem', 
+                marginInlineStart: '0.75rem', 
+                borderInlineStart: '1px solid var(--border-color)', 
+                paddingInlineStart: '0.75rem',
+                height: '18px'
+              }}
+            >
+              <button 
+                onClick={() => i18n.changeLanguage('fr')} 
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: i18n.language.startsWith('fr') ? 'var(--success)' : 'var(--text-secondary)', 
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  padding: '0.1rem 0.2rem',
+                  lineHeight: 1,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                FR
+              </button>
+              <span style={{ color: 'var(--border-color)', fontSize: '0.8rem', userSelect: 'none', lineHeight: 1 }}>/</span>
+              <button 
+                onClick={() => i18n.changeLanguage('ar')} 
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: i18n.language.startsWith('ar') ? 'var(--success)' : 'var(--text-secondary)', 
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  padding: '0.1rem 0.2rem',
+                  lineHeight: 1,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                AR
+              </button>
+            </div>
           </div>
         </header>
 
