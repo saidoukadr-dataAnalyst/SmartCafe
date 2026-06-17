@@ -41,33 +41,43 @@ const getMondayOfWeek = (): Date => {
 
 
 
+import type { DailyIncome, Delivery } from '../types';
+
+interface PayrollRecord {
+  date: string;
+  amount: number;
+}
+
+interface ChartDataPoint {
+  name: string;
+  Fournisseurs: number;
+  Personnel: number;
+  Revenu: number;
+}
+
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
-  const [weeklyIncome, setWeeklyIncome] = React.useState(0);
-  const [weeklyExpenses, setWeeklyExpenses] = React.useState(0);
-  const [chartData, setChartData] = React.useState<any[]>([]);
-  const [monthlyChartData, setMonthlyChartData] = React.useState<any[]>([]);
 
   const currentMonthName = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
 
-  React.useEffect(() => {
+  const { chartData, weeklyIncome, weeklyExpenses, monthlyChartData } = React.useMemo(() => {
     const monday = getMondayOfWeek();
 
     // Parse localStorage data once
     const savedIncomes = localStorage.getItem('app_incomes');
-    const incomes = savedIncomes ? JSON.parse(savedIncomes) : [];
+    const incomes: DailyIncome[] = savedIncomes ? JSON.parse(savedIncomes) : [];
 
     const savedDeliveries = localStorage.getItem('app_deliveries');
     const savedArchive = localStorage.getItem('app_deliveries_archive');
-    const activeDeliveries = savedDeliveries ? JSON.parse(savedDeliveries) : [];
-    const allDeliveries = [
+    const activeDeliveries: Delivery[] = savedDeliveries ? JSON.parse(savedDeliveries) : [];
+    const allDeliveries: Delivery[] = [
       ...activeDeliveries,
       ...(savedArchive ? JSON.parse(savedArchive) : [])
     ];
 
     // Payroll records (validated payments)
     const savedPayroll = localStorage.getItem('app_payroll');
-    const payroll = savedPayroll ? JSON.parse(savedPayroll) : [];
+    const payroll: PayrollRecord[] = savedPayroll ? JSON.parse(savedPayroll) : [];
 
     // === BUILD WEEKLY CHART (7 days, real data) ===
     // Group all weekly expenses on Sunday
@@ -78,19 +88,19 @@ const Dashboard: React.FC = () => {
       const dayDate = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
       const dayStr = formatDateLocal(dayDate);
 
-      const dayDeliveries = activeDeliveries.filter((d: any) => d.date === dayStr);
-      weeklyFournisseursTotal += dayDeliveries.reduce((sum: number, d: any) => sum + Number(d.totalPrice), 0);
+      const dayDeliveries = activeDeliveries.filter((d: Delivery) => d.date === dayStr);
+      weeklyFournisseursTotal += dayDeliveries.reduce((sum: number, d: Delivery) => sum + Number(d.totalPrice), 0);
 
-      const dayPayroll = payroll.filter((p: any) => p.date === dayStr);
-      weeklyPersonnelTotal += dayPayroll.reduce((sum: number, p: any) => sum + p.amount, 0);
+      const dayPayroll = payroll.filter((p: PayrollRecord) => p.date === dayStr);
+      weeklyPersonnelTotal += dayPayroll.reduce((sum: number, p: PayrollRecord) => sum + p.amount, 0);
     }
 
-    const weekChart = dayNames.map((name, index) => {
+    const weekChart: ChartDataPoint[] = dayNames.map((name, index) => {
       const dayDate = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + index);
       const dayStr = formatDateLocal(dayDate);
       const dateLabel = dayDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
 
-      const dayIncome = incomes.find((i: any) => i.date === dayStr);
+      const dayIncome = incomes.find((i: DailyIncome) => i.date === dayStr);
       const dayRevenu = dayIncome ? dayIncome.amount : 0;
 
       // Group weekly expenses on Sunday (index 6)
@@ -106,13 +116,9 @@ const Dashboard: React.FC = () => {
       };
     });
 
-    setChartData(weekChart);
-
     // === WEEKLY KPI ===
     const totalWeeklyIncome = weekChart.reduce((acc, curr) => acc + curr.Revenu, 0);
     const totalWeeklyExpenses = weekChart.reduce((acc, curr) => acc + curr.Fournisseurs + curr.Personnel, 0);
-    setWeeklyIncome(totalWeeklyIncome);
-    setWeeklyExpenses(totalWeeklyExpenses);
 
     // === BUILD MONTHLY CHART (4 standard weeks, real data) ===
     const now = new Date();
@@ -129,7 +135,7 @@ const Dashboard: React.FC = () => {
       { start: 22, end: lastDayOfMonth, label: `22-${String(lastDayOfMonth).padStart(2, '0')}` }
     ];
 
-    const monthChart = weeksDefinition.map((w) => {
+    const monthChart: ChartDataPoint[] = weeksDefinition.map((w) => {
       let weekRevenu = 0;
       let weekFournisseurs = 0;
       let weekPersonnel = 0;
@@ -138,14 +144,14 @@ const Dashboard: React.FC = () => {
         const dayDate = new Date(year, month, day);
         const dayStr = formatDateLocal(dayDate);
 
-        const dayIncome = incomes.find((inc: any) => inc.date === dayStr);
+        const dayIncome = incomes.find((inc: DailyIncome) => inc.date === dayStr);
         if (dayIncome) weekRevenu += dayIncome.amount;
 
-        const dayDels = allDeliveries.filter((del: any) => del.date === dayStr);
-        weekFournisseurs += dayDels.reduce((sum: number, d: any) => sum + Number(d.totalPrice), 0);
+        const dayDels = allDeliveries.filter((del: Delivery) => del.date === dayStr);
+        weekFournisseurs += dayDels.reduce((sum: number, d: Delivery) => sum + Number(d.totalPrice), 0);
 
-        const dayPay = payroll.filter((p: any) => p.date === dayStr);
-        weekPersonnel += dayPay.reduce((sum: number, p: any) => sum + p.amount, 0);
+        const dayPay = payroll.filter((p: PayrollRecord) => p.date === dayStr);
+        weekPersonnel += dayPay.reduce((sum: number, p: PayrollRecord) => sum + p.amount, 0);
       }
 
       return {
@@ -156,7 +162,12 @@ const Dashboard: React.FC = () => {
       };
     });
 
-    setMonthlyChartData(monthChart);
+    return {
+      chartData: weekChart,
+      weeklyIncome: totalWeeklyIncome,
+      weeklyExpenses: totalWeeklyExpenses,
+      monthlyChartData: monthChart
+    };
   }, []);
 
   const netProfit = weeklyIncome - weeklyExpenses;
@@ -207,7 +218,12 @@ const Dashboard: React.FC = () => {
       },
     });
 
-    const finalY = (doc as any).lastAutoTable?.finalY || 100;
+    interface jsPDFWithAutoTable extends jsPDF {
+      lastAutoTable?: {
+        finalY?: number;
+      };
+    }
+    const finalY = (doc as jsPDFWithAutoTable).lastAutoTable?.finalY || 100;
     
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);

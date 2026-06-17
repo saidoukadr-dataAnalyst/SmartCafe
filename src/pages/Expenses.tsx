@@ -15,6 +15,8 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
 
 const categories = ['Loyer', 'Énergie / Eau', 'Internet / Télécom', 'Fournitures', 'Autres'];
 
+const generateId = () => Date.now().toString();
+
 const Expenses: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [expenses, setExpenses] = useState<FixedExpense[]>(() => {
@@ -68,7 +70,7 @@ const Expenses: React.FC = () => {
         } : e));
       } else {
         setExpenses([...expenses, {
-          id: Date.now().toString(),
+          id: generateId(),
           type: newType,
           amount: parseFloat(newAmount),
           month: formattedMonth,

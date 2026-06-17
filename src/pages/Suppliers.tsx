@@ -207,7 +207,12 @@ const Suppliers: React.FC = () => {
     });
 
     const grandTotal = sortedFilteredHistory.reduce((sum, d) => sum + Number(d.totalPrice), 0);
-    const finalY = (doc as any).lastAutoTable?.finalY || 100;
+    interface jsPDFWithAutoTable extends jsPDF {
+      lastAutoTable?: {
+        finalY?: number;
+      };
+    }
+    const finalY = (doc as jsPDFWithAutoTable).lastAutoTable?.finalY || 100;
     
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);

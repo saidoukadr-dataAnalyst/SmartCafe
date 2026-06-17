@@ -15,6 +15,23 @@ import {
   Legend
 } from 'recharts';
 
+import type { FixedExpense, DailyIncome, Delivery } from '../types';
+
+interface PayrollRecord {
+  date: string;
+  amount: number;
+}
+
+interface WeeklyReportItem {
+  name: string;
+  nameAr: string;
+  Revenu: number;
+  Fournisseurs: number;
+  Personnel: number;
+  sortKey: string;
+  BeneficeNet?: number;
+}
+
 // Helper: format Date to local YYYY-MM-DD string without timezone shifting
 const formatDateLocal = (date: Date): string => {
   const y = date.getFullYear();
@@ -34,8 +51,6 @@ const yearlyDataRaw = [
 
 const Reports: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const [reportData, setReportData] = React.useState(yearlyDataRaw);
-  const [weeklyDataState, setWeeklyDataState] = React.useState<any[]>([]);
 
   const [toastMessage, setToastMessage] = React.useState('');
   const [toastType, setToastType] = React.useState<'success' | 'error' | 'info'>('success');
@@ -51,7 +66,7 @@ const Reports: React.FC = () => {
     const name = parts[0];
     const year = parts[1] ? ` ${parts[1]}` : '';
     
-    let key = '';
+    let key: string;
     switch (name) {
       case 'Janvier': key = 'january'; break;
       case 'Février': key = 'february'; break;
@@ -70,7 +85,7 @@ const Reports: React.FC = () => {
     return t(`months.${key}`) + year;
   };
 
-  React.useEffect(() => {
+  const { reportData, weeklyDataState } = React.useMemo(() => {
     // We always calculate relative to the currentMonth string in FR format for storage keys
     const currentMonthStr = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
     const currentMonthPrefix = formatDateLocal(new Date()).slice(0, 7); // e.g., "2026-06"
@@ -79,41 +94,40 @@ const Reports: React.FC = () => {
     const savedFraisFixes = localStorage.getItem('app_fixed_expenses');
     let totalFraisFixes = 0;
     if (savedFraisFixes) {
-      const expenses = JSON.parse(savedFraisFixes);
+      const expenses: FixedExpense[] = JSON.parse(savedFraisFixes);
       // Fixed expenses month strings can be stored in FR or AR depending on when they were created.
       // Let's check both FR and AR representations just in case.
       const currentMonthStrAr = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-      const currentMonthExpenses = expenses.filter((e: any) => e.month === currentMonthStr || e.month === currentMonthStrAr);
-      totalFraisFixes = currentMonthExpenses.reduce((sum: number, e: any) => sum + e.amount, 0);
+      const currentMonthExpenses = expenses.filter((e: FixedExpense) => e.month === currentMonthStr || e.month === currentMonthStrAr);
+      totalFraisFixes = currentMonthExpenses.reduce((sum: number, e: FixedExpense) => sum + e.amount, 0);
     }
 
     // 2. Revenus
     const savedIncomes = localStorage.getItem('app_incomes');
     let totalRevenus = 0;
     if (savedIncomes) {
-      const incomes = JSON.parse(savedIncomes);
-      const currentMonthIncomes = incomes.filter((i: any) => i.date.startsWith(currentMonthPrefix));
-      totalRevenus = currentMonthIncomes.reduce((sum: number, i: any) => sum + i.amount, 0);
+      const incomes: DailyIncome[] = JSON.parse(savedIncomes);
+      const currentMonthIncomes = incomes.filter((i: DailyIncome) => i.date.startsWith(currentMonthPrefix));
+      totalRevenus = currentMonthIncomes.reduce((sum: number, i: DailyIncome) => sum + i.amount, 0);
     }
 
     // 3. Fournisseurs (active + archived deliveries)
     const savedDeliveries = localStorage.getItem('app_deliveries');
     const savedArchive = localStorage.getItem('app_deliveries_archive');
-    let totalFournisseurs = 0;
-    const allDeliveries = [
+    const allDeliveries: Delivery[] = [
       ...(savedDeliveries ? JSON.parse(savedDeliveries) : []),
       ...(savedArchive ? JSON.parse(savedArchive) : [])
     ];
-    const currentMonthDeliveries = allDeliveries.filter((d: any) => d.date && d.date.startsWith(currentMonthPrefix));
-    totalFournisseurs = currentMonthDeliveries.reduce((sum: number, d: any) => sum + Number(d.totalPrice), 0);
+    const currentMonthDeliveries = allDeliveries.filter((d: Delivery) => d.date && d.date.startsWith(currentMonthPrefix));
+    const totalFournisseurs = currentMonthDeliveries.reduce((sum: number, d: Delivery) => sum + Number(d.totalPrice), 0);
 
     // 4. Personnel (actual validated payments)
     const savedPayroll = localStorage.getItem('app_payroll');
     let totalPersonnel = 0;
     if (savedPayroll) {
-      const payroll = JSON.parse(savedPayroll);
-      const currentMonthPayroll = payroll.filter((p: any) => p.date && p.date.startsWith(currentMonthPrefix));
-      totalPersonnel = currentMonthPayroll.reduce((sum: number, p: any) => sum + p.amount, 0);
+      const payroll: PayrollRecord[] = JSON.parse(savedPayroll);
+      const currentMonthPayroll = payroll.filter((p: PayrollRecord) => p.date && p.date.startsWith(currentMonthPrefix));
+      totalPersonnel = currentMonthPayroll.reduce((sum: number, p: PayrollRecord) => sum + p.amount, 0);
     }
     
     // Update the current month (last item in the array) with real data
@@ -126,10 +140,9 @@ const Reports: React.FC = () => {
       Fournisseurs: (savedDeliveries || savedArchive) ? totalFournisseurs : newData[lastIdx].Fournisseurs,
       Personnel: savedPayroll ? totalPersonnel : newData[lastIdx].Personnel
     };
-    setReportData(newData);
 
     // --- Weekly Aggregation ---
-    const weeklyMap = new Map<string, { name: string, nameAr: string, Revenu: number, Fournisseurs: number, Personnel: number, sortKey: string }>();
+    const weeklyMap = new Map<string, WeeklyReportItem>();
 
     const addToWeek = (dateStr: string, type: 'Revenu' | 'Fournisseurs' | 'Personnel', amount: number) => {
       if (!dateStr || isNaN(new Date(dateStr).getTime())) return;
@@ -154,11 +167,13 @@ const Reports: React.FC = () => {
     };
 
     if (savedIncomes) {
-      JSON.parse(savedIncomes).forEach((i: any) => addToWeek(i.date, 'Revenu', Number(i.amount) || 0));
+      const parsedIncomes: DailyIncome[] = JSON.parse(savedIncomes);
+      parsedIncomes.forEach((i: DailyIncome) => addToWeek(i.date, 'Revenu', Number(i.amount) || 0));
     }
-    allDeliveries.forEach((d: any) => addToWeek(d.date, 'Fournisseurs', Number(d.totalPrice) || 0));
+    allDeliveries.forEach((d: Delivery) => addToWeek(d.date, 'Fournisseurs', Number(d.totalPrice) || 0));
     if (savedPayroll) {
-      JSON.parse(savedPayroll).forEach((p: any) => addToWeek(p.date, 'Personnel', Number(p.amount) || 0));
+      const parsedPayroll: PayrollRecord[] = JSON.parse(savedPayroll);
+      parsedPayroll.forEach((p: PayrollRecord) => addToWeek(p.date, 'Personnel', Number(p.amount) || 0));
     }
 
     const sortedWeeks = Array.from(weeklyMap.values())
@@ -168,7 +183,10 @@ const Reports: React.FC = () => {
         BeneficeNet: w.Revenu - (w.Fournisseurs + w.Personnel)
       }));
       
-    setWeeklyDataState(sortedWeeks);
+    return {
+      reportData: newData,
+      weeklyDataState: sortedWeeks
+    };
   }, []);
 
   const yearlyData = reportData.map(data => ({
@@ -214,7 +232,12 @@ const Reports: React.FC = () => {
     });
 
     // Rounded box for Total Net
-    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    interface jsPDFWithAutoTable extends jsPDF {
+      lastAutoTable?: {
+        finalY?: number;
+      };
+    }
+    const finalY = (doc as jsPDFWithAutoTable).lastAutoTable?.finalY || 100;
     
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(226, 232, 240);

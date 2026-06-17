@@ -1,10 +1,12 @@
 export interface TrashItem {
   id: string;
   type: 'supplier' | 'delivery' | 'employee' | 'fixed_expense' | 'income' | 'payroll';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   deletedAt: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const moveToTrash = (type: TrashItem['type'], data: any | any[]) => {
   const currentTrash = JSON.parse(localStorage.getItem('app_trash') || '[]');
   const now = new Date().toISOString();

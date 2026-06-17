@@ -13,6 +13,8 @@ const formatDateLocal = (date: Date): string => {
   return `${y}-${m}-${d}`;
 };
 
+const generateId = () => Date.now().toString();
+
 const Staff: React.FC = () => {
   const { t } = useTranslation();
   const [employees, setEmployees] = useState<Employee[]>(() => {
@@ -69,7 +71,7 @@ const Staff: React.FC = () => {
         } : e));
       } else {
         setEmployees([...employees, {
-          id: Date.now().toString(),
+          id: generateId(),
           name: newName,
           role: newRole,
           weeklySalary: parseFloat(newSalary)

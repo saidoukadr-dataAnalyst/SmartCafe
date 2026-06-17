@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RotateCcw, Trash2, CheckCircle, Package, User, DollarSign, Truck } from 'lucide-react';
 import type { TrashItem } from '../trashHelper';
-import type { Supplier } from '../types';
+import type { Supplier, Delivery } from '../types';
 import { useTranslation } from 'react-i18next';
 
 const Trash: React.FC = () => {
@@ -9,9 +9,9 @@ const Trash: React.FC = () => {
   const [trashItems, setTrashItems] = useState<TrashItem[]>(() => {
     // Migration from old app_trash_deliveries to app_trash
     const oldTrash = localStorage.getItem('app_trash_deliveries');
-    let oldDeliveries: any[] = [];
+    let oldDeliveries: TrashItem[] = [];
     if (oldTrash) {
-      oldDeliveries = JSON.parse(oldTrash).map((d: any) => ({
+      oldDeliveries = JSON.parse(oldTrash).map((d: Delivery) => ({
         id: Math.random().toString(36).substr(2, 9),
         type: 'delivery',
         data: d,

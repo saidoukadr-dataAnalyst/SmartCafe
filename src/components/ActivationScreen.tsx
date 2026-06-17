@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ShieldAlert, Key, Copy, Check } from 'lucide-react';
 
 interface ActivationScreenProps {
@@ -6,13 +6,7 @@ interface ActivationScreenProps {
 }
 
 const ActivationScreen: React.FC<ActivationScreenProps> = ({ onActivationSuccess }) => {
-  const [deviceId, setDeviceId] = useState('');
-  const [activationKey, setActivationKey] = useState('');
-  const [error, setError] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
+  const [deviceId] = useState(() => {
     let id = localStorage.getItem('app_device_id');
     if (!id) {
       // Generate a professional-looking HW ID
@@ -21,8 +15,12 @@ const ActivationScreen: React.FC<ActivationScreenProps> = ({ onActivationSuccess
       id = `HW-${part()}-${part()}-${part()}`;
       localStorage.setItem('app_device_id', id);
     }
-    setDeviceId(id);
-  }, []);
+    return id;
+  });
+  const [activationKey, setActivationKey] = useState('');
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(deviceId);

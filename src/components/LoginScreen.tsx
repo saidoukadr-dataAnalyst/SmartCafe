@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Lock, Eye, EyeOff, Coffee, AlertCircle, Key, Copy, Check } from 'lucide-react';
 
 interface LoginScreenProps {
@@ -10,17 +10,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [isSetupMode, setIsSetupMode] = useState(false);
+  const [isSetupMode, setIsSetupMode] = useState(() => !localStorage.getItem('app_password'));
   const [isConfirming, setIsConfirming] = useState(false);
 
   // Recovery states
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryKey, setRecoveryKey] = useState('');
-  const [deviceId, setDeviceId] = useState('');
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    // Retrieve or generate Device ID
+  const [deviceId] = useState(() => {
     let id = localStorage.getItem('app_device_id');
     if (!id) {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -28,16 +24,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       id = `HW-${part()}-${part()}-${part()}`;
       localStorage.setItem('app_device_id', id);
     }
-    setDeviceId(id);
-
-    // Check password
-    const savedPassword = localStorage.getItem('app_password');
-    if (savedPassword) {
-      setIsSetupMode(false);
-    } else {
-      setIsSetupMode(true);
-    }
-  }, []);
+    return id;
+  });
+  const [copied, setCopied] = useState(false);
 
   const handleCopyDeviceId = () => {
     navigator.clipboard.writeText(deviceId);

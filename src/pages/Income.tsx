@@ -78,7 +78,11 @@ const Income: React.FC = () => {
             <CalendarDays size={20} /> {t('income.selectDate')}
           </h2>
           <Calendar 
-            onChange={(val: any) => setDate(val)} 
+            onChange={(val) => {
+              if (val instanceof Date) {
+                setDate(val);
+              }
+            }} 
             value={date} 
             tileContent={tileContent}
             className="custom-calendar"
