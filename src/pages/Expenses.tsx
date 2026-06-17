@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit2, CheckCircle } from 'lucide-react';
 import { mockFixedExpenses } from '../mockData';
 import { moveToTrash } from '../trashHelper';
 import type { FixedExpense } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const categoryColors: Record<string, { bg: string; text: string }> = {
   'Loyer': { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6' },
@@ -15,6 +16,7 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
 const categories = ['Loyer', 'Énergie / Eau', 'Internet / Télécom', 'Fournitures', 'Autres'];
 
 const Expenses: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [expenses, setExpenses] = useState<FixedExpense[]>(() => {
     const saved = localStorage.getItem('app_fixed_expenses');
     return saved ? JSON.parse(saved) : mockFixedExpenses;
@@ -23,6 +25,7 @@ const Expenses: React.FC = () => {
   React.useEffect(() => {
     localStorage.setItem('app_fixed_expenses', JSON.stringify(expenses));
   }, [expenses]);
+  
   const [showModal, setShowModal] = useState(false);
 
   const [newType, setNewType] = useState('');
@@ -40,11 +43,20 @@ const Expenses: React.FC = () => {
     setTimeout(() => setToastMessage(''), 4000);
   };
 
+  const getCategoryTranslation = (cat: string) => {
+    switch (cat) {
+      case 'Loyer': return t('expenses.cat_loyer');
+      case 'Énergie / Eau': return t('expenses.cat_energy');
+      case 'Internet / Télécom': return t('expenses.cat_internet');
+      case 'Fournitures': return t('expenses.cat_supplies');
+      default: return t('expenses.cat_others');
+    }
+  };
+
   const handleAddExpense = () => {
     if (newType.trim() && newAmount && newMonth) {
-      // Format month from YYYY-MM to readable (if needed) or keep as is.
       const dateObj = new Date(newMonth + '-01');
-      const formattedMonth = dateObj.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+      const formattedMonth = dateObj.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
       
       if (editingId) {
         setExpenses(expenses.map(e => e.id === editingId ? {
@@ -65,7 +77,7 @@ const Expenses: React.FC = () => {
       }
       resetForm();
     } else {
-      showToast("Veuillez remplir tous les champs.", "error");
+      showToast(t('expenses.fillAllFields'), "error");
     }
   };
 
@@ -82,18 +94,26 @@ const Expenses: React.FC = () => {
     setNewType(expense.type);
     setNewAmount(expense.amount.toString());
     
-    // We need to convert formattedMonth back to YYYY-MM if possible, or just require re-entry if complex.
-    // For simplicity, let's try to map it back or just leave it empty if parsing is hard.
-    // Actually, HTML input type="month" expects YYYY-MM.
-    // Let's create a mapping or just set it to current month.
+    // Attempt conversion of month back to YYYY-MM
+    // Since months could be saved in FR or AR, we can map common French names or default to empty
     const monthMap: Record<string, string> = {
       'Janvier': '01', 'Février': '02', 'Mars': '03', 'Avril': '04', 'Mai': '05', 'Juin': '06',
       'Juillet': '07', 'Août': '08', 'Septembre': '09', 'Octobre': '10', 'Novembre': '11', 'Décembre': '12'
     };
+    
+    // Arabic month map helper
+    const arMonthMap: Record<string, string> = {
+      'يناير': '01', 'فبراير': '02', 'مارس': '03', 'أبريل': '04', 'مايو': '05', 'يونيو': '06',
+      'يوليو': '07', 'أغسطس': '08', 'سبتمبر': '09', 'أكتوبر': '10', 'نوفمبر': '11', 'ديسمبر': '12'
+    };
+    
     const parts = expense.month.split(' ');
     let yyyymm = '';
-    if (parts.length === 2 && monthMap[parts[0]]) {
-      yyyymm = `${parts[1]}-${monthMap[parts[0]]}`;
+    if (parts.length === 2) {
+      const mNum = monthMap[parts[0]] || arMonthMap[parts[0]];
+      if (mNum) {
+        yyyymm = `${parts[1]}-${mNum}`;
+      }
     }
     setNewMonth(yyyymm);
     
@@ -103,7 +123,7 @@ const Expenses: React.FC = () => {
   };
 
   const handleDeleteExpense = (id: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette charge ?")) {
+    if (window.confirm(t('expenses.confirmDelete'))) {
       const expense = expenses.find(e => e.id === id);
       if (expense) moveToTrash('fixed_expense', expense);
       setExpenses(expenses.filter(e => e.id !== id));
@@ -113,9 +133,9 @@ const Expenses: React.FC = () => {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Frais Fixes Mensuels</h1>
+        <h1 className="page-title">{t('expenses.title')}</h1>
         <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true); }}>
-          <Plus size={18} /> Ajouter une Charge
+          <Plus size={18} /> {t('expenses.addExpense')}
         </button>
       </div>
 
@@ -123,11 +143,11 @@ const Expenses: React.FC = () => {
         <table className="table">
           <thead>
             <tr>
-              <th>Type de Charge</th>
-              <th>Catégorie</th>
-              <th>Mois</th>
-              <th>Montant</th>
-              <th>Actions</th>
+              <th>{t('expenses.expenseType')}</th>
+              <th>{t('expenses.category')}</th>
+              <th>{t('expenses.month')}</th>
+              <th>{t('expenses.amount')}</th>
+              <th>{t('expenses.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -146,7 +166,7 @@ const Expenses: React.FC = () => {
                       backgroundColor: colors.bg,
                       color: colors.text
                     }}>
-                      {cat}
+                      {getCategoryTranslation(cat)}
                     </span>
                   </td>
                   <td>{expense.month}</td>
@@ -156,7 +176,7 @@ const Expenses: React.FC = () => {
                       <button 
                         className="btn btn-outline"
                         onClick={() => handleEditExpense(expense)}
-                        title="Modifier cette charge"
+                        title={t('expenses.editExpense')}
                         style={{ padding: '0.25rem 0.5rem' }}
                       >
                         <Edit2 size={14} />
@@ -164,7 +184,7 @@ const Expenses: React.FC = () => {
                       <button 
                         className="btn btn-danger"
                         onClick={() => handleDeleteExpense(expense.id)}
-                        title="Supprimer cette charge"
+                        title={t('expenses.confirmDelete')}
                         style={{ padding: '0.25rem 0.5rem' }}
                       >
                         <Trash2 size={14} />
@@ -177,7 +197,7 @@ const Expenses: React.FC = () => {
           </tbody>
           <tfoot>
             <tr style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', fontWeight: 'bold', borderTop: '2px solid var(--border-color)' }}>
-              <td style={{ padding: '1rem 1.5rem' }}>Total Charges Récurrentes</td>
+              <td style={{ padding: '1rem 1.5rem' }}>{t('expenses.totalExpenses')}</td>
               <td></td>
               <td></td>
               <td style={{ padding: '1rem 1.5rem', color: 'var(--warning)', fontSize: '1.05rem' }}>
@@ -192,19 +212,19 @@ const Expenses: React.FC = () => {
       {showModal && (
         <div className="modal-overlay" onClick={resetForm}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem' }}>{editingId ? "Modifier la Charge" : "Nouvelle Charge Récurrente"}</h2>
+            <h2 style={{ marginBottom: '1.5rem' }}>{editingId ? t('expenses.editExpense') : t('expenses.newExpense')}</h2>
             <div className="form-group">
-              <label className="form-label">Type (ex: Loyer, Internet...)</label>
+              <label className="form-label">{t('expenses.typeLabel')}</label>
               <input 
                 type="text" 
                 className="form-input" 
-                placeholder="Saisir le type" 
+                placeholder={t('expenses.typePlaceholder')} 
                 value={newType}
                 onChange={e => setNewType(e.target.value)}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Catégorie</label>
+              <label className="form-label">{t('expenses.category')}</label>
               <select 
                 className="form-input" 
                 value={newCategory}
@@ -212,23 +232,23 @@ const Expenses: React.FC = () => {
                 style={{ cursor: 'pointer' }}
               >
                 {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>{getCategoryTranslation(cat)}</option>
                 ))}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Montant (DH)</label>
+              <label className="form-label">{t('expenses.amount')} (DH)</label>
               <input 
                 type="number" 
                 inputMode="decimal"
                 className="form-input" 
-                placeholder="Ex: 500" 
+                placeholder={t('expenses.amountPlaceholder')} 
                 value={newAmount}
                 onChange={e => setNewAmount(e.target.value)}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Mois Concerné</label>
+              <label className="form-label">{t('expenses.monthLabel')}</label>
               <input 
                 type="month" 
                 className="form-input" 
@@ -237,8 +257,8 @@ const Expenses: React.FC = () => {
               />
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-              <button className="btn btn-outline" onClick={resetForm}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleAddExpense}>{editingId ? "Enregistrer" : "Ajouter"}</button>
+              <button className="btn btn-outline" onClick={resetForm}>{t('common.cancel')}</button>
+              <button className="btn btn-primary" onClick={handleAddExpense}>{editingId ? t('common.save') : t('common.add')}</button>
             </div>
           </div>
         </div>

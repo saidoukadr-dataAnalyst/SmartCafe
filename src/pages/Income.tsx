@@ -4,6 +4,7 @@ import 'react-calendar/dist/Calendar.css';
 import { Plus, CalendarDays, CheckCircle } from 'lucide-react';
 import { mockDailyIncome } from '../mockData';
 import type { DailyIncome } from '../types';
+import { useTranslation } from 'react-i18next';
 
 // Helper: format Date to local YYYY-MM-DD string without timezone shifting
 const formatDateLocal = (date: Date): string => {
@@ -14,6 +15,7 @@ const formatDateLocal = (date: Date): string => {
 };
 
 const Income: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [incomes, setIncomes] = useState<DailyIncome[]>(() => {
     const saved = localStorage.getItem('app_incomes');
     return saved ? JSON.parse(saved) : mockDailyIncome;
@@ -50,7 +52,7 @@ const Income: React.FC = () => {
     setIncomes(newIncomes);
     localStorage.setItem('app_incomes', JSON.stringify(newIncomes));
     setAmount('');
-    showToast('Revenu enregistré avec succès !', 'success');
+    showToast(t('income.successSave'), 'success');
   };
 
   const tileContent = ({ date, view }: { date: Date, view: string }) => {
@@ -67,13 +69,13 @@ const Income: React.FC = () => {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Revenus Journaliers (Chiffre d'Affaire)</h1>
+        <h1 className="page-title">{t('income.title')}</h1>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
         <div className="kpi-card" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '2rem' }}>
           <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <CalendarDays size={20} /> Sélectionner une Date
+            <CalendarDays size={20} /> {t('income.selectDate')}
           </h2>
           <Calendar 
             onChange={(val: any) => setDate(val)} 
@@ -84,18 +86,20 @@ const Income: React.FC = () => {
         </div>
 
         <div className="kpi-card" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '2rem', height: 'fit-content' }}>
-          <h2 style={{ marginBottom: '1.5rem' }}>Détails pour le {date.toLocaleDateString('fr-FR')}</h2>
+          <h2 style={{ marginBottom: '1.5rem' }}>
+            {t('income.detailsFor')} {date.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR')}
+          </h2>
           
           <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: 'var(--radius-md)', width: '100%' }}>
-            <p className="kpi-label" style={{ color: 'var(--success)' }}>Chiffre d'affaire enregistré :</p>
+            <p className="kpi-label" style={{ color: 'var(--success)' }}>{t('income.registeredRevenue')}</p>
             <p className="kpi-value" style={{ color: 'var(--success)' }}>
-              {incomeForDate ? `${incomeForDate.amount} DH` : 'Aucun revenu enregistré'}
+              {incomeForDate ? `${incomeForDate.amount} DH` : t('income.noRevenue')}
             </p>
           </div>
 
           <form onSubmit={handleAddIncome} style={{ width: '100%' }}>
             <div className="form-group">
-              <label className="form-label">Saisir / Modifier le montant (DH)</label>
+              <label className="form-label">{t('income.enterAmount')}</label>
               <input 
                 type="number" 
                 inputMode="decimal"
@@ -107,7 +111,7 @@ const Income: React.FC = () => {
               />
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-              <Plus size={18} /> Enregistrer le Revenu
+              <Plus size={18} /> {t('income.saveRevenue')}
             </button>
           </form>
         </div>

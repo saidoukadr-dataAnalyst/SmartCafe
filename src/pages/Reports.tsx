@@ -3,6 +3,7 @@ import { Download, CheckCircle } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportPDF } from '../pdfHelper';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart,
   Bar,
@@ -32,6 +33,7 @@ const yearlyDataRaw = [
 ];
 
 const Reports: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [reportData, setReportData] = React.useState(yearlyDataRaw);
   const [weeklyDataState, setWeeklyDataState] = React.useState<any[]>([]);
 
@@ -44,7 +46,32 @@ const Reports: React.FC = () => {
     setTimeout(() => setToastMessage(''), 4000);
   };
 
+  const getMonthTranslation = (monthName: string) => {
+    const parts = monthName.split(' ');
+    const name = parts[0];
+    const year = parts[1] ? ` ${parts[1]}` : '';
+    
+    let key = '';
+    switch (name) {
+      case 'Janvier': key = 'january'; break;
+      case 'Février': key = 'february'; break;
+      case 'Mars': key = 'march'; break;
+      case 'Avril': key = 'april'; break;
+      case 'Mai': key = 'may'; break;
+      case 'Juin': key = 'june'; break;
+      case 'Juillet': key = 'july'; break;
+      case 'Août': key = 'august'; break;
+      case 'Septembre': key = 'september'; break;
+      case 'Octobre': key = 'october'; break;
+      case 'Novembre': key = 'november'; break;
+      case 'Décembre': key = 'december'; break;
+      default: return monthName;
+    }
+    return t(`months.${key}`) + year;
+  };
+
   React.useEffect(() => {
+    // We always calculate relative to the currentMonth string in FR format for storage keys
     const currentMonthStr = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
     const currentMonthPrefix = formatDateLocal(new Date()).slice(0, 7); // e.g., "2026-06"
 
@@ -53,7 +80,10 @@ const Reports: React.FC = () => {
     let totalFraisFixes = 0;
     if (savedFraisFixes) {
       const expenses = JSON.parse(savedFraisFixes);
-      const currentMonthExpenses = expenses.filter((e: any) => e.month === currentMonthStr);
+      // Fixed expenses month strings can be stored in FR or AR depending on when they were created.
+      // Let's check both FR and AR representations just in case.
+      const currentMonthStrAr = new Date().toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+      const currentMonthExpenses = expenses.filter((e: any) => e.month === currentMonthStr || e.month === currentMonthStrAr);
       totalFraisFixes = currentMonthExpenses.reduce((sum: number, e: any) => sum + e.amount, 0);
     }
 
@@ -99,7 +129,7 @@ const Reports: React.FC = () => {
     setReportData(newData);
 
     // --- Weekly Aggregation ---
-    const weeklyMap = new Map<string, { name: string, Revenu: number, Fournisseurs: number, Personnel: number, sortKey: string }>();
+    const weeklyMap = new Map<string, { name: string, nameAr: string, Revenu: number, Fournisseurs: number, Personnel: number, sortKey: string }>();
 
     const addToWeek = (dateStr: string, type: 'Revenu' | 'Fournisseurs' | 'Personnel', amount: number) => {
       if (!dateStr || isNaN(new Date(dateStr).getTime())) return;
@@ -115,9 +145,10 @@ const Reports: React.FC = () => {
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       const name = `Du ${pad(monday.getDate())}/${pad(monday.getMonth() + 1)} au ${pad(sunday.getDate())}/${pad(sunday.getMonth() + 1)}`;
+      const nameAr = `من ${pad(monday.getDate())}/${pad(monday.getMonth() + 1)} إلى ${pad(sunday.getDate())}/${pad(sunday.getMonth() + 1)}`;
       
       if (!weeklyMap.has(sortKey)) {
-        weeklyMap.set(sortKey, { name, Revenu: 0, Fournisseurs: 0, Personnel: 0, sortKey });
+        weeklyMap.set(sortKey, { name, nameAr, Revenu: 0, Fournisseurs: 0, Personnel: 0, sortKey });
       }
       weeklyMap.get(sortKey)![type] += amount;
     };
@@ -204,7 +235,7 @@ const Reports: React.FC = () => {
 
   const handleExportWeekly = () => {
     if (weeklyDataState.length === 0) {
-      showToast("Aucune donnée hebdomadaire disponible.", "info");
+      showToast(t('reports.noWeeklyDataToast'), "info");
       return;
     }
     const doc = new jsPDF();
@@ -254,40 +285,42 @@ const Reports: React.FC = () => {
     exportPDF(doc, `Historique_Hebdomadaire.pdf`);
   };
 
+  const currentMonthLocalizedName = getMonthTranslation(currentMonth.name);
+
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Rapport Mensuel</h1>
+        <h1 className="page-title">{t('reports.title')}</h1>
         <button className="btn btn-primary" onClick={handleExport}>
-          <Download size={18} /> Exporter le rapport mensuel
+          <Download size={18} /> {t('reports.exportMonthly')}
         </button>
       </div>
 
       <div className="kpi-grid">
         <div className="kpi-card" style={{ flex: 1 }}>
           <div className="kpi-content">
-            <div className="kpi-label">Revenu de ce mois ({currentMonth.name})</div>
+            <div className="kpi-label">{t('reports.revenueMonth', { month: currentMonthLocalizedName })}</div>
             <div className="kpi-value" style={{ color: 'var(--success)' }}>{currentMonth.Revenu} DH</div>
           </div>
         </div>
         
         <div className="kpi-card" style={{ flex: 1 }}>
           <div className="kpi-content">
-            <div className="kpi-label">Frais Fixes de ce mois ({currentMonth.name})</div>
+            <div className="kpi-label">{t('reports.fixedExpensesMonth', { month: currentMonthLocalizedName })}</div>
             <div className="kpi-value" style={{ color: '#f59e0b' }}>{currentMonth.FraisFixes} DH</div>
           </div>
         </div>
         
         <div className="kpi-card" style={{ flex: 1 }}>
           <div className="kpi-content">
-            <div className="kpi-label">Dépenses de ce mois ({currentMonth.name})</div>
+            <div className="kpi-label">{t('reports.totalExpensesMonth', { month: currentMonthLocalizedName })}</div>
             <div className="kpi-value" style={{ color: 'var(--danger)' }}>{currentMonth.Fournisseurs + currentMonth.Personnel + currentMonth.FraisFixes} DH</div>
           </div>
         </div>
 
         <div className="kpi-card" style={{ flex: 1 }}>
           <div className="kpi-content">
-            <div className="kpi-label">Bénéfice Net de ce mois ({currentMonth.name})</div>
+            <div className="kpi-label">{t('reports.netProfitMonth', { month: currentMonthLocalizedName })}</div>
             <div className="kpi-value" style={{ color: profitCurrent >= 0 ? 'var(--success)' : 'var(--danger)' }}>
               {profitCurrent} DH
             </div>
@@ -297,21 +330,21 @@ const Reports: React.FC = () => {
 
       <div className="chart-container" style={{ marginTop: '2rem' }}>
         <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', fontWeight: 600 }}>
-          Comparaison Mensuelle (Revenus vs Dépenses)
+          {t('reports.monthlyComparison')}
         </h2>
         <div style={{ width: '100%', height: '300px' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={yearlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <BarChart data={yearlyData.map(d => ({ ...d, name: getMonthTranslation(d.name) }))} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} />
               <YAxis axisLine={false} tickLine={false} />
               <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
               <Legend />
-              <Bar dataKey="Fournisseurs" stackId="depenses" fill="#3b82f6" radius={[0, 0, 0, 0]} name="Fournisseurs" />
-              <Bar dataKey="Personnel" stackId="depenses" fill="#ef4444" radius={[0, 0, 0, 0]} name="Personnel" />
-              <Bar dataKey="FraisFixes" stackId="depenses" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Frais Fixes" />
-              <Bar dataKey="Revenu" fill="#10b981" radius={[4, 4, 0, 0]} name="Revenu" label={{ position: 'top', fill: '#10b981', fontSize: 10, fontWeight: 'bold' }} />
-              <Bar dataKey="BeneficeNet" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Bénéfice Net" label={{ position: 'top', fill: '#8b5cf6', fontSize: 10, fontWeight: 'bold' }} />
+              <Bar dataKey="Fournisseurs" stackId="depenses" fill="#3b82f6" radius={[0, 0, 0, 0]} name={t('reports.chartFournisseurs')} />
+              <Bar dataKey="Personnel" stackId="depenses" fill="#ef4444" radius={[0, 0, 0, 0]} name={t('reports.chartPersonnel')} />
+              <Bar dataKey="FraisFixes" stackId="depenses" fill="#f59e0b" radius={[4, 4, 0, 0]} name={t('reports.chartFraisFixes')} />
+              <Bar dataKey="Revenu" fill="#10b981" radius={[4, 4, 0, 0]} name={t('reports.chartRevenu')} label={{ position: 'top', fill: '#10b981', fontSize: 10, fontWeight: 'bold' }} />
+              <Bar dataKey="BeneficeNet" fill="#8b5cf6" radius={[4, 4, 0, 0]} name={t('reports.chartBenefice')} label={{ position: 'top', fill: '#8b5cf6', fontSize: 10, fontWeight: 'bold' }} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -319,18 +352,18 @@ const Reports: React.FC = () => {
 
       <div className="table-container" style={{ marginTop: '2rem' }}>
         <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', fontWeight: 600 }}>
-          Tableau Récapitulatif Mensuel (DH)
+          {t('reports.summaryTableTitle')}
         </h2>
         <table className="table">
           <thead>
             <tr>
-              <th>Mois</th>
-              <th>Revenus (CA)</th>
-              <th>Dépenses Fournisseurs</th>
-              <th>Salaires Personnel</th>
-              <th>Frais Fixes</th>
-              <th>Total Dépenses</th>
-              <th>Bénéfice Net</th>
+              <th>{t('reports.tableMonth')}</th>
+              <th>{t('reports.tableRevenue')}</th>
+              <th>{t('reports.tableSuppliers')}</th>
+              <th>{t('reports.tablePersonnel')}</th>
+              <th>{t('reports.tableFixedExpenses')}</th>
+              <th>{t('reports.tableTotalExpenses')}</th>
+              <th>{t('reports.tableNetProfit')}</th>
             </tr>
           </thead>
           <tbody>
@@ -339,7 +372,7 @@ const Reports: React.FC = () => {
               const isPositive = data.BeneficeNet >= 0;
               return (
                 <tr key={idx}>
-                  <td><strong>{data.name}</strong></td>
+                  <td><strong>{getMonthTranslation(data.name)}</strong></td>
                   <td style={{ color: 'var(--success)' }}>{data.Revenu} DH</td>
                   <td>{data.Fournisseurs} DH</td>
                   <td>{data.Personnel} DH</td>
@@ -357,10 +390,10 @@ const Reports: React.FC = () => {
 
       <div className="page-header" style={{ marginTop: '3rem' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>
-          Historique Hebdomadaire
+          {t('reports.weeklyHistoryTitle')}
         </h2>
         <button className="btn btn-outline" onClick={handleExportWeekly}>
-          <Download size={18} /> Exporter Historique Semaines
+          <Download size={18} /> {t('reports.exportWeeklyHistory')}
         </button>
       </div>
 
@@ -368,11 +401,11 @@ const Reports: React.FC = () => {
         <table className="table">
           <thead>
             <tr>
-              <th>Semaine</th>
-              <th>Revenus</th>
-              <th>Fournisseurs</th>
-              <th>Personnel</th>
-              <th>Bénéfice Net</th>
+              <th>{t('reports.tableWeek')}</th>
+              <th>{t('reports.tableWeekRevenues')}</th>
+              <th>{t('reports.tableWeekSuppliers')}</th>
+              <th>{t('reports.tableWeekPersonnel')}</th>
+              <th>{t('reports.tableWeekNetProfit')}</th>
             </tr>
           </thead>
           <tbody>
@@ -380,7 +413,7 @@ const Reports: React.FC = () => {
               const isPositive = week.BeneficeNet >= 0;
               return (
                 <tr key={idx}>
-                  <td><strong>{week.name}</strong></td>
+                  <td><strong>{i18n.language === 'ar' ? week.nameAr : week.name}</strong></td>
                   <td style={{ color: 'var(--success)' }}>{week.Revenu} DH</td>
                   <td>{week.Fournisseurs} DH</td>
                   <td>{week.Personnel} DH</td>
@@ -392,7 +425,7 @@ const Reports: React.FC = () => {
             }) : (
               <tr>
                 <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  Aucune donnée hebdomadaire enregistrée.
+                  {t('reports.noWeeklyData')}
                 </td>
               </tr>
             )}

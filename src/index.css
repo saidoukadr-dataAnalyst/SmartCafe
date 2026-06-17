@@ -939,3 +939,12 @@ body {
     padding: 1.25rem;
   }
 }
+
+/* RTL overrides for Sidebar translate position */
+[dir="rtl"] .sidebar {
+  transform: translateX(100%);
+}
+
+[dir="rtl"] .sidebar.open {
+  transform: translateX(0);
+}

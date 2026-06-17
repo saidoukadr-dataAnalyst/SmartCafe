@@ -6,6 +6,7 @@ import { Plus, CheckCircle, Trash2, Edit2, ShoppingBag, Download } from 'lucide-
 import { mockSuppliers, mockDeliveries } from '../mockData';
 import { moveToTrash } from '../trashHelper';
 import type { Supplier, Delivery } from '../types';
+import { useTranslation } from 'react-i18next';
 
 // Helper: format Date to local YYYY-MM-DD string without timezone shifting
 const formatDateLocal = (date: Date): string => {
@@ -16,6 +17,7 @@ const formatDateLocal = (date: Date): string => {
 };
 
 const Suppliers: React.FC = () => {
+  const { t } = useTranslation();
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
     const saved = localStorage.getItem('app_suppliers');
     return saved ? JSON.parse(saved) : mockSuppliers;
@@ -54,7 +56,7 @@ const Suppliers: React.FC = () => {
 
   const getSupplierName = (id: string) => {
     const supplier = suppliers.find(s => s.id === id);
-    return supplier ? supplier.name : `Fournisseur inconnu (ID: ${id})`;
+    return supplier ? supplier.name : t('suppliers.unknownSupplier', { id });
   };
   
   // New Supplier Form
@@ -110,7 +112,7 @@ const Suppliers: React.FC = () => {
   const sortedFilteredHistory = [...filteredHistory].sort((a, b) => b.date.localeCompare(a.date));
 
   const handleDeleteSupplier = (id: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce fournisseur ? Toutes ses livraisons associées seront ignorées.")) {
+    if (window.confirm(t('suppliers.confirmDeleteSupplier'))) {
       const supplier = suppliers.find(s => s.id === id);
       if (supplier) moveToTrash('supplier', supplier);
       
@@ -120,7 +122,7 @@ const Suppliers: React.FC = () => {
   };
 
   const handleDeleteActiveDelivery = (deliveryId: string, supplierId: string, price: number) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette livraison ?")) {
+    if (window.confirm(t('suppliers.confirmDeleteDelivery'))) {
       setDeliveries(deliveries.filter(d => d.id !== deliveryId));
       setSuppliers(suppliers.map(s => 
         s.id === supplierId 
@@ -131,7 +133,7 @@ const Suppliers: React.FC = () => {
   };
 
   const handleDeleteArchivedDelivery = (deliveryId: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette livraison de l'historique ?")) {
+    if (window.confirm(t('suppliers.confirmDeleteDeliveryHistory'))) {
       const delivery = archivedDeliveries.find(d => d.id === deliveryId);
       if (delivery) moveToTrash('delivery', delivery);
       setArchivedDeliveries(archivedDeliveries.filter(d => d.id !== deliveryId));
@@ -156,9 +158,10 @@ const Suppliers: React.FC = () => {
   };
 
   const handleClearHistory = () => {
-    if (window.confirm("Êtes-vous sûr de vouloir effacer l'intégralité de l'historique archivé ? (Les éléments seront envoyés dans la corbeille)")) {
+    if (window.confirm(t('suppliers.confirmClearHistory'))) {
       if (archivedDeliveries.length > 0) moveToTrash('delivery', archivedDeliveries);
       setArchivedDeliveries([]);
+      showToast(t('suppliers.toastClearHistory'), "info");
     }
   };
 
@@ -242,15 +245,16 @@ const Suppliers: React.FC = () => {
       setNewSupplierContact('');
       setEditingSupplierId(null);
       setShowSupplierModal(false);
+      showToast(t('suppliers.toastSupplierAdded'), "success");
     } else {
-      showToast("Le nom du fournisseur est obligatoire.", "error");
+      showToast(t('suppliers.fillAllFields'), "error");
     }
   };
 
   const handleAddDelivery = (e: React.FormEvent) => {
     e.preventDefault();
     if (!delSupplierId || !delLabel || !delQuantity || !delTotalPrice) {
-      showToast("Veuillez remplir tous les champs obligatoires.", "error");
+      showToast(t('suppliers.fillAllFields'), "error");
       return;
     }
 
@@ -297,7 +301,7 @@ const Suppliers: React.FC = () => {
     setDelTotalPrice('');
     setEditingDeliveryId(null);
     setShowDeliveryModal(false);
-    showToast("Dépense / Livraison enregistrée avec succès !", "success");
+    showToast(t('suppliers.toastDeliveryAdded'), "success");
   };
 
   const handleClotureDimanche = () => {
@@ -305,11 +309,11 @@ const Suppliers: React.FC = () => {
     const activeDettes = suppliers.reduce((sum, s) => sum + s.totalOwed, 0);
 
     if (activeDeliveriesCount === 0 && activeDettes === 0) {
-      showToast("Aucune livraison ni dette à clôturer cette semaine.", "info");
+      showToast(t('suppliers.noArchivedDeliveries'), "info");
       return;
     }
 
-    if (!window.confirm(`Êtes-vous sûr de vouloir effectuer la clôture du Dimanche ? Cette action va réinitialiser les dettes, générer les factures PDF pour chaque fournisseur actif, et archiver ${activeDeliveriesCount} livraisons.`)) {
+    if (!window.confirm(t('suppliers.closeWeeklyConfirm'))) {
       return;
     }
 
@@ -408,23 +412,23 @@ const Suppliers: React.FC = () => {
 
     setSuppliers(suppliers.map(s => ({ ...s, totalOwed: 0 })));
     setDeliveries([]);
-    showToast("Clôture du Dimanche effectuée ! Les dettes ont été réglées, les PDF générés, et les livraisons archivées.", "success");
+    showToast(t('suppliers.weeklySettlementSuccess'), "success");
   };
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Gestion des Fournisseurs</h1>
+        <h1 className="page-title">{t('suppliers.title')}</h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button className="btn btn-outline" onClick={() => { setEditingSupplierId(null); setNewSupplierName(''); setNewSupplierContact(''); setShowSupplierModal(true); }}>
-            <Plus size={18} /> Ajouter Fournisseur
+            <Plus size={18} /> {t('suppliers.addSupplier')}
           </button>
           <button className="btn btn-primary" onClick={() => { setEditingDeliveryId(null); setDelSupplierId(''); setDelLabel(''); setDelQuantity(''); setDelTotalPrice(''); setShowDeliveryModal(true); }}>
-            <ShoppingBag size={18} /> Saisir Dépense
+            <ShoppingBag size={18} /> {t('suppliers.newDelivery')}
           </button>
           {activeTab === 'current' && (
             <button className="btn btn-outline" onClick={handleClotureDimanche} style={{ borderColor: 'var(--success)', color: 'var(--success)' }}>
-              <CheckCircle size={18} /> Clôture Dimanche
+              <CheckCircle size={18} /> {t('suppliers.closeWeek')}
             </button>
           )}
         </div>
@@ -447,7 +451,7 @@ const Suppliers: React.FC = () => {
             transition: 'all 0.2s ease'
           }}
         >
-          Situation de la Semaine
+          {t('suppliers.tabCurrent')}
         </button>
         <button 
           onClick={() => setActiveTab('history')} 
@@ -464,7 +468,7 @@ const Suppliers: React.FC = () => {
             transition: 'all 0.2s ease'
           }}
         >
-          Historique Global (Archivé)
+          {t('suppliers.tabHistory')}
         </button>
       </div>
 
@@ -473,7 +477,7 @@ const Suppliers: React.FC = () => {
           <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
             <input 
               type="text" 
-              placeholder="Rechercher un fournisseur par nom..." 
+              placeholder={t('common.search')} 
               className="form-input"
               style={{ maxWidth: '350px' }}
               value={searchQuery}
@@ -485,10 +489,10 @@ const Suppliers: React.FC = () => {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Nom du Fournisseur</th>
-                  <th>Contact</th>
-                  <th>Montant Dû (Semaine)</th>
-                  <th>Actions</th>
+                  <th>{t('suppliers.supplier')}</th>
+                  <th>{t('suppliers.contact')}</th>
+                  <th>{t('suppliers.amountOwed')}</th>
+                  <th>{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -502,7 +506,7 @@ const Suppliers: React.FC = () => {
                         <button 
                           className="btn btn-primary"
                           style={{ padding: '0.5rem' }}
-                          title="Saisir une dépense pour ce fournisseur"
+                          title={t('suppliers.newDelivery')}
                           onClick={() => {
                             setEditingDeliveryId(null);
                             setDelLabel('');
@@ -521,12 +525,12 @@ const Suppliers: React.FC = () => {
                             setSelectedSupplier(supplier);
                           }}
                         >
-                          Voir Livraisons
+                          {t('suppliers.deliveryHistory')}
                         </button>
                         <button 
                           className="btn btn-outline"
                           onClick={() => handleEditSupplier(supplier)}
-                          title="Modifier ce fournisseur"
+                          title={t('suppliers.editSupplier')}
                           style={{ padding: '0.5rem' }}
                         >
                           <Edit2 size={16} />
@@ -534,7 +538,7 @@ const Suppliers: React.FC = () => {
                         <button 
                           className="btn btn-danger"
                           onClick={() => handleDeleteSupplier(supplier.id)}
-                          title="Supprimer ce fournisseur"
+                          title={t('suppliers.confirmDeleteSupplier')}
                           style={{ padding: '0.5rem' }}
                         >
                           <Trash2 size={16} />
@@ -545,13 +549,13 @@ const Suppliers: React.FC = () => {
                 ))}
                 {filteredSuppliers.length === 0 && (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>Aucun fournisseur trouvé.</td>
+                    <td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>{t('common.search')}</td>
                   </tr>
                 )}
               </tbody>
               <tfoot>
                 <tr style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', fontWeight: 'bold', borderTop: '2px solid var(--border-color)' }}>
-                  <td style={{ padding: '1rem 1.5rem' }}>Total Dû (Tous les Fournisseurs)</td>
+                  <td style={{ padding: '1rem 1.5rem' }}>{t('suppliers.totalAmountOwed')}</td>
                   <td></td>
                   <td style={{ padding: '1rem 1.5rem', color: suppliers.reduce((sum, s) => sum + s.totalOwed, 0) > 0 ? 'var(--danger)' : 'var(--success)', fontSize: '1.05rem' }}>
                     <strong>{suppliers.reduce((sum, s) => sum + s.totalOwed, 0)} DH</strong>
@@ -565,18 +569,18 @@ const Suppliers: React.FC = () => {
           {/* Table of active deliveries of the week */}
           <div style={{ marginTop: '2.5rem' }}>
             <h2 style={{ marginBottom: '1rem', fontSize: '1.3rem', fontWeight: 600 }}>
-              Détail de toutes les livraisons saisies cette semaine
+              {t('suppliers.activeDeliveriesTitle')}
             </h2>
             <div className="table-container">
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Fournisseur</th>
-                    <th>Produit / Label</th>
-                    <th>Quantité</th>
-                    <th>Prix Total</th>
-                    <th>Action</th>
+                    <th>{t('common.date')}</th>
+                    <th>{t('suppliers.supplier')}</th>
+                    <th>{t('suppliers.product')}</th>
+                    <th>{t('suppliers.quantity')}</th>
+                    <th>{t('suppliers.price')}</th>
+                    <th>{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -585,7 +589,7 @@ const Suppliers: React.FC = () => {
                     return (
                       <tr key={d.id}>
                         <td>{d.date}</td>
-                        <td><strong>{supplier ? supplier.name : 'Inconnu'}</strong></td>
+                        <td><strong>{supplier ? supplier.name : t('common.unknown')}</strong></td>
                         <td>{d.label}</td>
                         <td>{d.quantity}</td>
                         <td><strong>{d.totalPrice} DH</strong></td>
@@ -594,7 +598,7 @@ const Suppliers: React.FC = () => {
                             <button 
                               className="btn btn-outline" 
                               style={{ padding: '0.25rem', cursor: 'pointer' }}
-                              title="Modifier cette livraison"
+                              title={t('suppliers.editDelivery')}
                               onClick={() => handleEditDelivery(d)}
                             >
                               <Edit2 size={16} />
@@ -602,7 +606,7 @@ const Suppliers: React.FC = () => {
                             <button 
                               className="btn" 
                               style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
-                              title="Supprimer cette livraison"
+                              title={t('suppliers.confirmDeleteDelivery')}
                               onClick={() => handleDeleteActiveDelivery(d.id, d.supplierId, d.totalPrice)}
                             >
                               <Trash2 size={16} />
@@ -615,7 +619,7 @@ const Suppliers: React.FC = () => {
                   {deliveries.length === 0 && (
                     <tr>
                       <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
-                        Aucune livraison saisie cette semaine.
+                        {t('suppliers.noArchivedDeliveries')}
                       </td>
                     </tr>
                   )}
@@ -623,7 +627,7 @@ const Suppliers: React.FC = () => {
                 {deliveries.length > 0 && (
                   <tfoot>
                     <tr style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', fontWeight: 'bold' }}>
-                      <td colSpan={4} style={{ padding: '1rem 1.5rem' }}>Total de la Semaine</td>
+                      <td colSpan={4} style={{ padding: '1rem 1.5rem' }}>{t('suppliers.tabCurrent')}</td>
                       <td colSpan={2} style={{ padding: '1rem 1.5rem', color: 'var(--danger)' }}>
                         <strong>{deliveries.reduce((sum, d) => sum + Number(d.totalPrice), 0)} DH</strong>
                       </td>
@@ -642,13 +646,13 @@ const Suppliers: React.FC = () => {
           <div className="kpi-grid">
             <div className="kpi-card" style={{ flex: 1 }}>
               <div className="kpi-content">
-                <div className="kpi-label">Nombre total de Livraisons</div>
+                <div className="kpi-label">{t('suppliers.deliveryHistory')}</div>
                 <div className="kpi-value">{sortedFilteredHistory.length}</div>
               </div>
             </div>
             <div className="kpi-card" style={{ flex: 1 }}>
               <div className="kpi-content">
-                <div className="kpi-label">Dépense Totale Archivée</div>
+                <div className="kpi-label">{t('suppliers.totalDette')}</div>
                 <div className="kpi-value" style={{ color: 'var(--accent-primary)' }}>
                   {sortedFilteredHistory.reduce((sum, d) => sum + Number(d.totalPrice), 0)} DH
                 </div>
@@ -667,16 +671,16 @@ const Suppliers: React.FC = () => {
               marginBottom: '1.5rem' 
             }}
           >
-            <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}>Filtres de recherche</h3>
+            <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}>{t('reports.summaryTableTitle')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Fournisseur</label>
+                <label className="form-label">{t('suppliers.supplier')}</label>
                 <select 
                   className="form-input"
                   value={historySupplierId}
                   onChange={e => setHistorySupplierId(e.target.value)}
                 >
-                  <option value="">Tous les fournisseurs</option>
+                  <option value="">{t('suppliers.allSuppliers')}</option>
                   {suppliers.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
@@ -684,18 +688,18 @@ const Suppliers: React.FC = () => {
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Rechercher par produit</label>
+                <label className="form-label">{t('suppliers.searchProduct')}</label>
                 <input 
                   type="text" 
                   className="form-input" 
-                  placeholder="Ex: Café, Lait..." 
+                  placeholder={t('suppliers.searchProduct')} 
                   value={historySearchQuery}
                   onChange={e => setHistorySearchQuery(e.target.value)}
                 />
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Date Début</label>
+                <label className="form-label">{t('suppliers.startDate')}</label>
                 <input 
                   type="date" 
                   className="form-input" 
@@ -705,7 +709,7 @@ const Suppliers: React.FC = () => {
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Date Fin</label>
+                <label className="form-label">{t('suppliers.endDate')}</label>
                 <input 
                   type="date" 
                   className="form-input" 
@@ -725,7 +729,7 @@ const Suppliers: React.FC = () => {
                     setHistoryEndDate('');
                   }}
                 >
-                  Réinitialiser
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>
@@ -734,11 +738,11 @@ const Suppliers: React.FC = () => {
           {/* Actions de l'historique */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <button className="btn btn-primary" onClick={handleExportHistoryPDF} disabled={sortedFilteredHistory.length === 0}>
-              <Download size={18} /> Exporter en PDF
+              <Download size={18} /> {t('suppliers.exportHistory')}
             </button>
             {archivedDeliveries.length > 0 && (
               <button className="btn btn-danger" onClick={handleClearHistory}>
-                <Trash2 size={18} /> Vider l'historique
+                <Trash2 size={18} /> {t('suppliers.clearHistory')}
               </button>
             )}
           </div>
@@ -748,12 +752,12 @@ const Suppliers: React.FC = () => {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Fournisseur</th>
-                  <th>Produit / Label</th>
-                  <th>Quantité</th>
-                  <th>Prix Total</th>
-                  <th>Action</th>
+                  <th>{t('common.date')}</th>
+                  <th>{t('suppliers.supplier')}</th>
+                  <th>{t('suppliers.product')}</th>
+                  <th>{t('suppliers.quantity')}</th>
+                  <th>{t('suppliers.price')}</th>
+                  <th>{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -769,7 +773,7 @@ const Suppliers: React.FC = () => {
                         <button 
                           className="btn btn-outline" 
                           style={{ padding: '0.25rem', cursor: 'pointer' }}
-                          title="Modifier cette livraison"
+                          title={t('suppliers.editDelivery')}
                           onClick={() => handleEditDelivery(d)}
                         >
                           <Edit2 size={16} />
@@ -777,7 +781,7 @@ const Suppliers: React.FC = () => {
                         <button 
                           className="btn" 
                           style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
-                          title="Supprimer de l'historique"
+                          title={t('suppliers.confirmDeleteDeliveryHistory')}
                           onClick={() => handleDeleteArchivedDelivery(d.id)}
                         >
                           <Trash2 size={16} />
@@ -789,7 +793,7 @@ const Suppliers: React.FC = () => {
                 {sortedFilteredHistory.length === 0 && (
                   <tr>
                     <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
-                      Aucune livraison trouvée dans l'historique.
+                      {t('suppliers.noArchivedDeliveries')}
                     </td>
                   </tr>
                 )}
@@ -797,7 +801,7 @@ const Suppliers: React.FC = () => {
               {sortedFilteredHistory.length > 0 && (
                 <tfoot>
                   <tr style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', fontWeight: 'bold' }}>
-                    <td colSpan={4} style={{ padding: '1rem 1.5rem' }}>Total Filtré</td>
+                    <td colSpan={4} style={{ padding: '1rem 1.5rem' }}>{t('suppliers.tabHistory')}</td>
                     <td colSpan={2} style={{ padding: '1rem 1.5rem', color: 'var(--accent-primary)' }}>
                       <strong>{sortedFilteredHistory.reduce((sum, d) => sum + Number(d.totalPrice), 0)} DH</strong>
                     </td>
@@ -813,7 +817,7 @@ const Suppliers: React.FC = () => {
       {selectedSupplier && (
         <div className="modal-overlay" onClick={() => setSelectedSupplier(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '650px' }}>
-            <h2 style={{ marginBottom: '1rem' }}>Livraisons : {selectedSupplier.name}</h2>
+            <h2 style={{ marginBottom: '1rem' }}>{t('suppliers.deliveryHistory')} : {selectedSupplier.name}</h2>
             
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
               <button 
@@ -821,14 +825,14 @@ const Suppliers: React.FC = () => {
                 onClick={() => setShowArchiveInModal(false)}
                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
               >
-                Livraisons en cours
+                {t('suppliers.tabCurrent')}
               </button>
               <button 
                 className={`btn ${showArchiveInModal ? 'btn-primary' : 'btn-outline'}`}
                 onClick={() => setShowArchiveInModal(true)}
                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
               >
-                Historique (Archivé)
+                {t('suppliers.tabHistory')}
               </button>
             </div>
 
@@ -836,11 +840,11 @@ const Suppliers: React.FC = () => {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Produit / Label</th>
-                    <th>Qté</th>
-                    <th>Prix Total</th>
-                    <th>Action</th>
+                    <th>{t('common.date')}</th>
+                    <th>{t('suppliers.product')}</th>
+                    <th>{t('suppliers.quantity')}</th>
+                    <th>{t('suppliers.price')}</th>
+                    <th>{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -855,7 +859,7 @@ const Suppliers: React.FC = () => {
                           <button 
                             className="btn btn-outline" 
                             style={{ padding: '0.25rem', cursor: 'pointer' }}
-                            title="Modifier cette livraison"
+                            title={t('suppliers.editDelivery')}
                             onClick={() => handleEditDelivery(d)}
                           >
                             <Edit2 size={16} />
@@ -863,7 +867,7 @@ const Suppliers: React.FC = () => {
                           <button 
                             className="btn" 
                             style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
-                            title="Supprimer cette livraison"
+                            title={t('suppliers.confirmDeleteDelivery')}
                             onClick={() => {
                               if (!showArchiveInModal) {
                                 handleDeleteActiveDelivery(d.id, selectedSupplier.id, d.totalPrice);
@@ -881,7 +885,7 @@ const Suppliers: React.FC = () => {
                   {(!showArchiveInModal ? getDeliveriesForSupplier(selectedSupplier.id) : getArchivedDeliveriesForSupplier(selectedSupplier.id)).length === 0 && (
                     <tr>
                       <td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>
-                        {showArchiveInModal ? "Aucune livraison archivée pour ce fournisseur." : "Aucune livraison cette semaine."}
+                        {showArchiveInModal ? t('suppliers.noArchivedDeliveries') : t('suppliers.noArchivedDeliveries')}
                       </td>
                     </tr>
                   )}
@@ -890,13 +894,13 @@ const Suppliers: React.FC = () => {
             </div>
             <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               {!showArchiveInModal ? (
-                <h3 style={{ color: 'var(--danger)' }}>Total Dû : {selectedSupplier.totalOwed} DH</h3>
+                <h3 style={{ color: 'var(--danger)' }}>{t('suppliers.totalAmountOwed')} : {selectedSupplier.totalOwed} DH</h3>
               ) : (
                 <h3 style={{ color: 'var(--text-secondary)' }}>
-                  Total Archivé : {getArchivedDeliveriesForSupplier(selectedSupplier.id).reduce((sum, d) => sum + Number(d.totalPrice), 0)} DH
+                  {t('suppliers.totalDette')} : {getArchivedDeliveriesForSupplier(selectedSupplier.id).reduce((sum, d) => sum + Number(d.totalPrice), 0)} DH
                 </h3>
               )}
-              <button className="btn btn-outline" onClick={() => setSelectedSupplier(null)}>Fermer</button>
+              <button className="btn btn-outline" onClick={() => setSelectedSupplier(null)}>{t('suppliers.closeBtn')}</button>
             </div>
           </div>
         </div>
@@ -906,13 +910,13 @@ const Suppliers: React.FC = () => {
       {showDeliveryModal && (
         <div className="modal-overlay" onClick={() => setShowDeliveryModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem' }}>{editingDeliveryId ? "Modifier Dépense (Livraison)" : "Saisir une Dépense (Livraison)"}</h2>
+            <h2 style={{ marginBottom: '1.5rem' }}>{editingDeliveryId ? t('suppliers.editDelivery') : t('suppliers.newDelivery')}</h2>
             <form onSubmit={handleAddDelivery}>
               <div className="form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className="form-label">Fournisseur</label>
+                  <label className="form-label">{t('suppliers.supplier')}</label>
                   <a href="#" onClick={(e) => { e.preventDefault(); setShowSupplierModal(true); }} style={{ fontSize: '0.875rem', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600 }}>
-                    + Nouveau Fournisseur
+                    + {t('suppliers.addSupplier')}
                   </a>
                 </div>
                 <select 
@@ -921,7 +925,7 @@ const Suppliers: React.FC = () => {
                   onChange={e => setDelSupplierId(e.target.value)}
                   required
                 >
-                  <option value="">-- Sélectionner un fournisseur --</option>
+                  <option value="">-- {t('suppliers.selectSupplier')} --</option>
                   {suppliers.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
@@ -929,7 +933,7 @@ const Suppliers: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Date</label>
+                <label className="form-label">{t('suppliers.deliveryDate')}</label>
                 <input 
                   type="date" 
                   className="form-input" 
@@ -940,11 +944,11 @@ const Suppliers: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Label de la chose fournie (Produit)</label>
+                <label className="form-label">{t('suppliers.productLabel')}</label>
                 <input 
                   type="text" 
                   className="form-input" 
-                  placeholder="Ex: Lait, Farine, Café..." 
+                  placeholder={t('suppliers.productPlaceholder')} 
                   value={delLabel}
                   onChange={e => setDelLabel(e.target.value)}
                   required
@@ -953,12 +957,12 @@ const Suppliers: React.FC = () => {
 
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Quantité</label>
+                  <label className="form-label">{t('suppliers.quantityLabel')}</label>
                   <input 
                     type="number" 
                     inputMode="decimal"
                     className="form-input" 
-                    placeholder="Ex: 10"
+                    placeholder={t('suppliers.quantityPlaceholder')}
                     min="1"
                     value={delQuantity}
                     onChange={e => setDelQuantity(e.target.value)}
@@ -966,12 +970,12 @@ const Suppliers: React.FC = () => {
                   />
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Prix Total (DH)</label>
+                  <label className="form-label">{t('suppliers.totalPrice')}</label>
                   <input 
                     type="number" 
                     inputMode="decimal"
                     className="form-input" 
-                    placeholder="Ex: 50"
+                    placeholder={t('suppliers.totalPricePlaceholder')}
                     min="0"
                     step="0.01"
                     value={delTotalPrice}
@@ -982,8 +986,8 @@ const Suppliers: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-                <button type="button" className="btn btn-outline" onClick={() => { setEditingDeliveryId(null); setShowDeliveryModal(false); }}>Annuler</button>
-                <button type="submit" className="btn btn-primary">{editingDeliveryId ? "Enregistrer" : "Enregistrer Dépense"}</button>
+                <button type="button" className="btn btn-outline" onClick={() => { setEditingDeliveryId(null); setShowDeliveryModal(false); }}>{t('common.cancel')}</button>
+                <button type="submit" className="btn btn-primary">{editingDeliveryId ? t('common.save') : t('suppliers.addDeliveryBtn')}</button>
               </div>
             </form>
           </div>
@@ -994,9 +998,9 @@ const Suppliers: React.FC = () => {
       {showSupplierModal && (
         <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setShowSupplierModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem' }}>{editingSupplierId ? "Modifier Fournisseur" : "Nouveau Fournisseur"}</h2>
+            <h2 style={{ marginBottom: '1.5rem' }}>{editingSupplierId ? t('suppliers.editSupplier') : t('suppliers.newSupplier')}</h2>
             <div className="form-group">
-              <label className="form-label">Nom du Fournisseur</label>
+              <label className="form-label">{t('suppliers.fullName')}</label>
               <input 
                 type="text" 
                 className="form-input" 
@@ -1006,7 +1010,7 @@ const Suppliers: React.FC = () => {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Contact</label>
+              <label className="form-label">{t('suppliers.phoneContact')}</label>
               <input 
                 type="text" 
                 className="form-input" 
@@ -1016,8 +1020,8 @@ const Suppliers: React.FC = () => {
               />
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-              <button className="btn btn-outline" onClick={() => { setEditingSupplierId(null); setShowSupplierModal(false); }}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleAddSupplier}>{editingSupplierId ? "Enregistrer" : "Sauvegarder"}</button>
+              <button className="btn btn-outline" onClick={() => { setEditingSupplierId(null); setShowSupplierModal(false); }}>{t('common.cancel')}</button>
+              <button className="btn btn-primary" onClick={handleAddSupplier}>{editingSupplierId ? t('common.save') : t('suppliers.saveSupplier')}</button>
             </div>
           </div>
         </div>

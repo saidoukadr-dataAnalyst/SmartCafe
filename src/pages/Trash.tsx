@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { RotateCcw, Trash2, CheckCircle, Package, User, DollarSign, Truck } from 'lucide-react';
 import type { TrashItem } from '../trashHelper';
 import type { Supplier } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const Trash: React.FC = () => {
+  const { t } = useTranslation();
   const [trashItems, setTrashItems] = useState<TrashItem[]>(() => {
     // Migration from old app_trash_deliveries to app_trash
     const oldTrash = localStorage.getItem('app_trash_deliveries');
@@ -48,11 +50,11 @@ const Trash: React.FC = () => {
 
   const getSupplierName = (id: string) => {
     const supplier = suppliers.find(s => s.id === id);
-    return supplier ? supplier.name : `Inconnu`;
+    return supplier ? supplier.name : t('trash.unknown');
   };
 
   const handleRestoreItem = (item: TrashItem) => {
-    if (window.confirm("Voulez-vous restaurer cet élément ?")) {
+    if (window.confirm(t('trash.confirmRestore'))) {
       // Logic based on type
       let storageKey = '';
       if (item.type === 'delivery') storageKey = 'app_deliveries_archive';
@@ -67,22 +69,22 @@ const Trash: React.FC = () => {
       }
       
       setTrashItems(trashItems.filter(t => t.id !== item.id));
-      showToast("Élément restauré avec succès.", "success");
+      showToast(t('trash.restoreSuccess'), "success");
     }
   };
 
   const handleEmptyTrash = () => {
     if (trashItems.length === 0) return;
-    if (window.confirm("Voulez-vous vider la corbeille définitivement ? Cette action est irréversible.")) {
+    if (window.confirm(t('trash.confirmEmpty'))) {
       setTrashItems([]);
-      showToast("La corbeille a été vidée définitivement.", "info");
+      showToast(t('trash.emptySuccess'), "info");
     }
   };
 
   const handleDeletePermanent = (id: string) => {
-    if (window.confirm("Voulez-vous supprimer définitivement cet élément ?")) {
+    if (window.confirm(t('trash.confirmDelete'))) {
       setTrashItems(trashItems.filter(d => d.id !== id));
-      showToast("Élément supprimé définitivement.", "info");
+      showToast(t('trash.deleteSuccess'), "info");
     }
   };
 
@@ -90,36 +92,44 @@ const Trash: React.FC = () => {
     if (item.type === 'delivery') {
       return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <strong>Livraison: {item.data.label}</strong>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Fournisseur: {getSupplierName(item.data.supplierId)} | Prix: {item.data.totalPrice} DH</span>
+          <strong>{t('trash.delivery')}: {item.data.label}</strong>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            {t('suppliers.supplier')}: {getSupplierName(item.data.supplierId)} | {t('common.amount')}: {item.data.totalPrice} DH
+          </span>
         </div>
       );
     }
     if (item.type === 'supplier') {
       return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <strong>Fournisseur: {item.data.name}</strong>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Contact: {item.data.contact}</span>
+          <strong>{t('trash.supplier')}: {item.data.name}</strong>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            {t('suppliers.contact')}: {item.data.contact}
+          </span>
         </div>
       );
     }
     if (item.type === 'employee') {
       return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <strong>Employé: {item.data.name}</strong>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Rôle: {item.data.role} | Salaire: {item.data.weeklySalary} DH</span>
+          <strong>{t('trash.employee')}: {item.data.name}</strong>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            {t('staff.role')}: {item.data.role} | {t('staff.weeklySalary')}: {item.data.weeklySalary} DH
+          </span>
         </div>
       );
     }
     if (item.type === 'fixed_expense') {
       return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <strong>Charge: {item.data.type} ({item.data.category})</strong>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Mois: {item.data.month} | Montant: {item.data.amount} DH</span>
+          <strong>{t('trash.charge')}: {item.data.type} ({item.data.category})</strong>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            {t('reports.month')}: {item.data.month} | {t('common.amount')}: {item.data.amount} DH
+          </span>
         </div>
       );
     }
-    return <span>Élément inconnu</span>;
+    return <span>{t('trash.unknown')}</span>;
   };
 
   const getItemIcon = (type: string) => {
@@ -136,7 +146,7 @@ const Trash: React.FC = () => {
     <div>
       <div className="page-header">
         <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Trash2 size={28} /> Corbeille
+          <Trash2 size={28} /> {t('trash.title')}
         </h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button 
@@ -144,7 +154,7 @@ const Trash: React.FC = () => {
             onClick={handleEmptyTrash}
             disabled={trashItems.length === 0}
           >
-            <Trash2 size={18} /> Vider la Corbeille
+            <Trash2 size={18} /> {t('trash.emptyTrash')}
           </button>
         </div>
       </div>
@@ -153,10 +163,10 @@ const Trash: React.FC = () => {
         <table className="table">
           <thead>
             <tr>
-              <th>Type</th>
-              <th>Détails de l'élément</th>
-              <th>Date de suppression</th>
-              <th>Actions</th>
+              <th>{t('trash.type')}</th>
+              <th>{t('trash.details')}</th>
+              <th>{t('trash.dateDeleted')}</th>
+              <th>{t('trash.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -166,21 +176,21 @@ const Trash: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     {getItemIcon(item.type)}
                     <span style={{ textTransform: 'capitalize' }}>
-                      {item.type === 'fixed_expense' ? 'Charge' : 
-                       item.type === 'delivery' ? 'Livraison' : 
-                       item.type === 'supplier' ? 'Fournisseur' : 
-                       item.type === 'employee' ? 'Employé' : item.type}
+                      {item.type === 'fixed_expense' ? t('trash.charge') : 
+                       item.type === 'delivery' ? t('trash.delivery') : 
+                       item.type === 'supplier' ? t('trash.supplier') : 
+                       item.type === 'employee' ? t('trash.employee') : item.type}
                     </span>
                   </div>
                 </td>
                 <td>{renderItemDetails(item)}</td>
-                <td>{new Date(item.deletedAt).toLocaleString('fr-FR')}</td>
+                <td>{new Date(item.deletedAt).toLocaleString()}</td>
                 <td>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button 
                       className="btn btn-outline" 
                       style={{ padding: '0.25rem', cursor: 'pointer', color: 'var(--success)', borderColor: 'var(--success)' }}
-                      title="Restaurer"
+                      title={t('trash.restore')}
                       onClick={() => handleRestoreItem(item)}
                     >
                       <RotateCcw size={16} />
@@ -188,7 +198,7 @@ const Trash: React.FC = () => {
                     <button 
                       className="btn" 
                       style={{ padding: '0.25rem', backgroundColor: 'transparent', color: 'var(--danger)', cursor: 'pointer' }}
-                      title="Supprimer définitivement"
+                      title={t('trash.deletePermanently')}
                       onClick={() => handleDeletePermanent(item.id)}
                     >
                       <Trash2 size={16} />
@@ -200,7 +210,7 @@ const Trash: React.FC = () => {
             {trashItems.length === 0 && (
               <tr>
                 <td colSpan={4} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-                  La corbeille est vide.
+                  {t('trash.emptyMessage')}
                 </td>
               </tr>
             )}

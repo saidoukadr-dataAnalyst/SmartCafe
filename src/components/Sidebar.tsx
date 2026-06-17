@@ -105,21 +105,76 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <Trash2 size={20} />
             <span>{t('sidebar.trash')}</span>
           </NavLink>
-        </nav>
-        <div className="sidebar-actions">
-          <button className="action-btn" onClick={() => { onClose(); setIsPasswordModalOpen(true); }}>
-            <Lock size={18} />
+          
+          <button 
+            onClick={() => {
+              setIsPasswordModalOpen(true);
+              onClose();
+            }}
+            className="nav-item"
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              width: '100%', 
+              textAlign: 'start', 
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 'inherit'
+            }}
+          >
+            <Lock size={20} />
             <span>{t('sidebar.security')}</span>
           </button>
-          <button className="action-btn" onClick={toggleTheme}>
+        </nav>
+        <div className="sidebar-footer" style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <button 
+            onClick={toggleTheme} 
+            className="btn btn-outline" 
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              gap: '0.75rem', 
+              color: 'var(--text-sidebar)', 
+              borderColor: 'rgba(255,255,255,0.1)',
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              cursor: 'pointer'
+            }}
+          >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             <span>{theme === 'dark' ? t('sidebar.lightMode') : t('sidebar.darkMode')}</span>
           </button>
-          <button className="action-btn" onClick={toggleLanguage}>
+          
+          <button 
+            onClick={toggleLanguage} 
+            className="btn btn-outline" 
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              gap: '0.75rem', 
+              color: 'var(--text-sidebar)', 
+              borderColor: 'rgba(255,255,255,0.1)',
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              cursor: 'pointer'
+            }}
+          >
             <Globe size={18} />
             <span>{i18n.language === 'fr' ? 'العربية' : 'Français'}</span>
           </button>
-          <button className="action-btn danger" onClick={handleLogout} style={{ marginTop: '0.75rem' }}>
+          
+          <button 
+            onClick={handleLogout} 
+            className="btn btn-outline" 
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              gap: '0.75rem', 
+              color: '#ef4444', 
+              borderColor: 'rgba(239, 68, 68, 0.2)',
+              backgroundColor: 'rgba(239, 68, 68, 0.05)',
+              cursor: 'pointer',
+              marginTop: '0.25rem'
+            }}
+          >
             <LogOut size={18} />
             <span>{t('sidebar.logout')}</span>
           </button>

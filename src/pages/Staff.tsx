@@ -3,6 +3,7 @@ import { Plus, CheckCircle, Trash2, Edit2 } from 'lucide-react';
 import { mockEmployees } from '../mockData';
 import { moveToTrash } from '../trashHelper';
 import type { Employee } from '../types';
+import { useTranslation } from 'react-i18next';
 
 // Helper: format Date to local YYYY-MM-DD string without timezone shifting
 const formatDateLocal = (date: Date): string => {
@@ -13,6 +14,7 @@ const formatDateLocal = (date: Date): string => {
 };
 
 const Staff: React.FC = () => {
+  const { t } = useTranslation();
   const [employees, setEmployees] = useState<Employee[]>(() => {
     const saved = localStorage.getItem('app_staff');
     return saved ? JSON.parse(saved) : mockEmployees;
@@ -21,6 +23,7 @@ const Staff: React.FC = () => {
   React.useEffect(() => {
     localStorage.setItem('app_staff', JSON.stringify(employees));
   }, [employees]);
+  
   const [showModal, setShowModal] = useState(false);
   
   const [newName, setNewName] = useState('');
@@ -37,6 +40,10 @@ const Staff: React.FC = () => {
     setTimeout(() => setToastMessage(''), 4000);
   };
 
+  const getStatusTranslation = (status?: string) => {
+    return (status || 'En attente') === 'Payé' ? t('staff.paid') : t('staff.pending');
+  };
+
   const handleValidationPaie = () => {
     const totalWeekly = employees.reduce((sum, e) => sum + e.weeklySalary, 0);
     const todayStr = formatDateLocal(new Date());
@@ -48,7 +55,7 @@ const Staff: React.FC = () => {
     localStorage.setItem('app_payroll', JSON.stringify(payroll));
 
     setEmployees(employees.map(e => ({ ...e, status: 'Payé' })));
-    showToast(`Paie de la semaine validée ! Total versé : ${totalWeekly} DH`, 'success');
+    showToast(t('staff.paySuccess', { total: totalWeekly }), 'success');
   };
 
   const handleAddEmployee = () => {
@@ -70,7 +77,7 @@ const Staff: React.FC = () => {
       }
       resetForm();
     } else {
-      showToast("Veuillez remplir tous les champs.", "error");
+      showToast(t('staff.fillAllFields'), "error");
     }
   };
 
@@ -91,7 +98,7 @@ const Staff: React.FC = () => {
   };
 
   const handleDeleteEmployee = (id: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet employé ?")) {
+    if (window.confirm(t('staff.confirmDelete'))) {
       const employee = employees.find(e => e.id === id);
       if (employee) moveToTrash('employee', employee);
       setEmployees(employees.filter(e => e.id !== id));
@@ -101,13 +108,13 @@ const Staff: React.FC = () => {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Gestion du Personnel</h1>
+        <h1 className="page-title">{t('staff.title')}</h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button className="btn btn-outline" onClick={() => { resetForm(); setShowModal(true); }}>
-            <Plus size={18} /> Ajouter Employé
+            <Plus size={18} /> {t('staff.addEmployee')}
           </button>
           <button className="btn btn-primary" onClick={handleValidationPaie}>
-            <CheckCircle size={18} /> Valider la Paie (Semaine)
+            <CheckCircle size={18} /> {t('staff.validatePay')}
           </button>
         </div>
       </div>
@@ -116,10 +123,10 @@ const Staff: React.FC = () => {
         <table className="table">
           <thead>
             <tr>
-              <th>Nom</th>
-              <th>Rôle</th>
-              <th>Salaire Hebdomadaire</th>
-              <th>Statut Paiement</th>
+              <th>{t('staff.name')}</th>
+              <th>{t('staff.role')}</th>
+              <th>{t('staff.weeklySalary')}</th>
+              <th>{t('staff.paymentStatus')}</th>
             </tr>
           </thead>
           <tbody>
@@ -138,12 +145,12 @@ const Staff: React.FC = () => {
                       backgroundColor: (employee.status || 'En attente') === 'Payé' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                       color: (employee.status || 'En attente') === 'Payé' ? 'var(--success)' : 'var(--warning)'
                     }}>
-                      {employee.status || 'En attente'}
+                      {getStatusTranslation(employee.status)}
                     </span>
                     <button 
                       className="btn btn-outline"
                       onClick={() => handleEditEmployee(employee)}
-                      title="Modifier cet employé"
+                      title={t('staff.editEmployee')}
                       style={{ padding: '0.25rem 0.5rem' }}
                     >
                       <Edit2 size={14} />
@@ -151,7 +158,7 @@ const Staff: React.FC = () => {
                     <button 
                       className="btn btn-danger"
                       onClick={() => handleDeleteEmployee(employee.id)}
-                      title="Supprimer cet employé"
+                      title={t('staff.confirmDelete')}
                       style={{ padding: '0.25rem 0.5rem' }}
                     >
                       <Trash2 size={14} />
@@ -163,7 +170,7 @@ const Staff: React.FC = () => {
           </tbody>
           <tfoot>
             <tr style={{ backgroundColor: 'rgba(0, 0, 0, 0.02)', fontWeight: 'bold', borderTop: '2px solid var(--border-color)' }}>
-              <td style={{ padding: '1rem 1.5rem' }}>Total Salaires Hebdomadaires</td>
+              <td style={{ padding: '1rem 1.5rem' }}>{t('staff.totalWeekly')}</td>
               <td></td>
               <td style={{ padding: '1rem 1.5rem', color: 'var(--accent-primary)', fontSize: '1.05rem' }}>
                 <strong>{employees.reduce((sum, e) => sum + e.weeklySalary, 0)} DH</strong>
@@ -177,41 +184,41 @@ const Staff: React.FC = () => {
       {showModal && (
         <div className="modal-overlay" onClick={resetForm}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem' }}>{editingId ? "Modifier l'Employé" : "Nouvel Employé"}</h2>
+            <h2 style={{ marginBottom: '1.5rem' }}>{editingId ? t('staff.editEmployee') : t('staff.newEmployee')}</h2>
             <div className="form-group">
-              <label className="form-label">Nom complet</label>
+              <label className="form-label">{t('staff.name')}</label>
               <input 
                 type="text" 
                 className="form-input" 
-                placeholder="Ex: Ahmed" 
+                placeholder={t('staff.fullNamePlaceholder')} 
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Rôle</label>
+              <label className="form-label">{t('staff.role')}</label>
               <input 
                 type="text" 
                 className="form-input" 
-                placeholder="Ex: Barista" 
+                placeholder={t('staff.rolePlaceholder')} 
                 value={newRole}
                 onChange={e => setNewRole(e.target.value)}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Salaire Hebdomadaire (DH)</label>
+              <label className="form-label">{t('staff.weeklySalary')} (DH)</label>
               <input 
                 type="number" 
                 inputMode="decimal"
                 className="form-input" 
-                placeholder="Ex: 1500" 
+                placeholder={t('staff.salaryPlaceholder')} 
                 value={newSalary}
                 onChange={e => setNewSalary(e.target.value)}
               />
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-              <button className="btn btn-outline" onClick={resetForm}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleAddEmployee}>{editingId ? "Enregistrer" : "Sauvegarder"}</button>
+              <button className="btn btn-outline" onClick={resetForm}>{t('common.cancel')}</button>
+              <button className="btn btn-primary" onClick={handleAddEmployee}>{editingId ? t('common.save') : t('staff.save')}</button>
             </div>
           </div>
         </div>
