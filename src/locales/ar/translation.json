@@ -7,7 +7,7 @@
     "expenses": "مصاريف ثابتة",
     "reports": "التقارير والحصيلة",
     "trash": "سلة المهملات",
-    "security": "الحماية",
+    "security": "الإعدادات",
     "data": "إدارة البيانات",
     "logout": "تسجيل الخروج",
     "lightMode": "الوضع الفاتح",
@@ -245,6 +245,8 @@
   },
   "security": {
     "title": "تعديل كلمة المرور",
+    "pinTab": "عام / PIN",
+    "cafeName": "اسم المقهى",
     "currentPassword": "كلمة المرور الحالية",
     "currentPasswordPlaceholder": "أدخل كلمة المرور الحالية",
     "newPassword": "كلمة المرور الجديدة",

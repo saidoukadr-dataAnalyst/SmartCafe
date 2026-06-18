@@ -187,11 +187,12 @@ const Staff: React.FC = () => {
     // Header
     doc.setFontSize(22);
     doc.setTextColor(30, 41, 59);
+    const cafeName = localStorage.getItem('app_cafe_name') || 'SmartCafe';
     doc.text(t('staff.paySlipTitle'), pageWidth / 2, 25, { align: 'center' });
     
     doc.setFontSize(12);
     doc.setTextColor(100, 116, 139);
-    doc.text(`SmartCafe`, pageWidth / 2, 33, { align: 'center' });
+    doc.text(cafeName, pageWidth / 2, 33, { align: 'center' });
 
     // Decorative Line
     doc.setDrawColor(226, 232, 240);

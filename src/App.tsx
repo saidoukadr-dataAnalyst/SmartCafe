@@ -22,6 +22,7 @@ const App: React.FC = () => {
     return sessionStorage.getItem('app_authenticated') === 'true';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [cafeName] = useState(() => localStorage.getItem('app_cafe_name') || 'SmartCafe');
 
   if (!isActivated) {
     return <ActivationScreen onActivationSuccess={() => setIsActivated(true)} />;
@@ -44,9 +45,12 @@ const App: React.FC = () => {
           >
             <Menu size={24} />
           </button>
-          <div className="header-brand">
+          <div className="header-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Coffee className="header-logo" size={22} />
-            <span className="header-title">SmartCafe</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="header-title" style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.1 }}>{cafeName}</span>
+              <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', opacity: 0.7, fontWeight: 600, letterSpacing: '0.5px' }}>By Oukadr</span>
+            </div>
             
             {/* Language Switcher */}
             <div 

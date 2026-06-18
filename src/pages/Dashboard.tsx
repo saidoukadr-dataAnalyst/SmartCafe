@@ -59,6 +59,7 @@ interface ChartDataPoint {
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
+  const [cafeName] = React.useState(() => localStorage.getItem('app_cafe_name') || 'SmartCafe');
   const [showMondayPrompt, setShowMondayPrompt] = React.useState<boolean>(() => {
     // 1. Check if today is Monday (1)
     const today = new Date();
@@ -401,15 +402,23 @@ const Dashboard: React.FC = () => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">{t('dashboard.title')}</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-primary" onClick={handleExport}>
-            <Download size={18} /> {t('common.exportPDF')}
-          </button>
-          <button className="btn btn-outline" onClick={handleExportWeeklyCSV} style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
-            <FileSpreadsheet size={18} /> {t('common.exportCSV')}
-          </button>
+      <div className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 className="page-title" style={{ margin: 0 }}>{t('dashboard.title')}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{cafeName}</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--accent-primary)', fontWeight: 700, letterSpacing: '0.5px' }}>By Oukadr</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-primary" onClick={handleExport}>
+              <Download size={18} /> {t('common.exportPDF')}
+            </button>
+            <button className="btn btn-outline" onClick={handleExportWeeklyCSV} style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+              <FileSpreadsheet size={18} /> {t('common.exportCSV')}
+            </button>
+          </div>
         </div>
       </div>
 

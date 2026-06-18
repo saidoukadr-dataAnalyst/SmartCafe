@@ -7,7 +7,7 @@
     "expenses": "Frais Fixes",
     "reports": "Rapports & Bilan",
     "trash": "Corbeille",
-    "security": "Sécurité",
+    "security": "Paramètres",
     "data": "Gestion des Données",
     "logout": "Déconnexion",
     "lightMode": "Mode Clair",
@@ -245,6 +245,8 @@
   },
   "security": {
     "title": "Modifier le Mot de Passe",
+    "pinTab": "Général / PIN",
+    "cafeName": "Nom du Café",
     "currentPassword": "Mot de passe actuel",
     "currentPasswordPlaceholder": "Saisissez votre mot de passe actuel",
     "newPassword": "Nouveau mot de passe",

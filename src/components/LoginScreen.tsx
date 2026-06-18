@@ -119,6 +119,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  const [cafeName] = useState(() => localStorage.getItem('app_cafe_name') || 'SmartCafe');
+
   return (
     <div className="login-container">
       <div className="login-card">
@@ -127,7 +129,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <Coffee size={32} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <h1 className="login-brand" style={{ marginBottom: '0.2rem' }}>SmartCafe</h1>
+            <h1 className="login-brand" style={{ marginBottom: '0.2rem' }}>{cafeName}</h1>
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.5px', opacity: 0.8 }}>by Oukadr</span>
           </div>
         </div>

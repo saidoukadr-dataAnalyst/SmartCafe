@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon, X, Lock, LogOut, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, FileText, Banknote, Wallet, Sun, Moon, X, LogOut, Trash2, Coffee, Settings } from 'lucide-react';
 import ChangePasswordModal from './ChangePasswordModal';
 import { useTranslation } from 'react-i18next';
 
@@ -12,6 +12,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [cafeName] = useState(() => localStorage.getItem('app_cafe_name') || 'SmartCafe');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light' || savedTheme === 'dark') {
@@ -46,8 +47,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       <div className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <LayoutDashboard size={24} />
-            <span>SmartCafe</span>
+            <Coffee size={24} style={{ color: 'var(--accent-primary)' }} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontWeight: 700, fontSize: '1.1rem', lineHeight: 1.2, color: 'var(--text-sidebar)' }}>{cafeName}</span>
+              <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-secondary)', opacity: 0.8, letterSpacing: '0.5px' }}>By Oukadr</span>
+            </div>
           </div>
           <button 
             onClick={onClose} 
@@ -117,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               fontSize: 'inherit'
             }}
           >
-            <Lock size={20} />
+            <Settings size={20} />
             <span>{t('sidebar.security')}</span>
           </button>
         </nav>
@@ -156,6 +160,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <LogOut size={18} />
             <span>{t('sidebar.logout')}</span>
           </button>
+          <div style={{ 
+            textAlign: 'center', 
+            fontSize: '0.75rem', 
+            color: 'var(--text-secondary)', 
+            opacity: 0.6, 
+            marginTop: '0.5rem',
+            userSelect: 'none'
+          }}>
+            SmartCafe v1.0.0 • by Oukadr
+          </div>
         </div>
       </div>
 
