@@ -5,9 +5,11 @@ import {
   Download, 
   DollarSign, 
   ShoppingCart,
-  TrendingUp
+  TrendingUp,
+  FileSpreadsheet
 } from 'lucide-react';
 import { exportPDF } from '../pdfHelper';
+import { exportCSV } from '../csvHelper';
 import { useTranslation } from 'react-i18next';
 import {
   BarChart,
@@ -41,7 +43,7 @@ const getMondayOfWeek = (): Date => {
 
 
 
-import type { DailyIncome, Delivery } from '../types';
+import type { DailyIncome, Delivery, Supplier } from '../types';
 
 interface PayrollRecord {
   date: string;
@@ -57,6 +59,138 @@ interface ChartDataPoint {
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
+  const [showMondayPrompt, setShowMondayPrompt] = React.useState<boolean>(() => {
+    // 1. Check if today is Monday (1)
+    const today = new Date();
+    const isMonday = today.getDay() === 1;
+    if (!isMonday) return false;
+
+    // 2. Check if already prompted today
+    const todayStr = today.toISOString().split('T')[0];
+    const lastPrompt = localStorage.getItem('app_last_monday_prompt');
+    if (lastPrompt === todayStr) return false;
+
+    // 3. Check if there are active deliveries or suppliers with debt
+    const savedDeliveries = localStorage.getItem('app_deliveries');
+    const activeDels = savedDeliveries ? JSON.parse(savedDeliveries) : [];
+    
+    const savedSuppliers = localStorage.getItem('app_suppliers');
+    const sups: Supplier[] = savedSuppliers ? JSON.parse(savedSuppliers) : [];
+    const hasDebts = sups.some((s: Supplier) => s.totalOwed > 0);
+
+    return activeDels.length > 0 || hasDebts;
+  });
+
+  const handleMondayCloseConfirm = () => {
+    const savedDeliveries = localStorage.getItem('app_deliveries');
+    const deliveries: Delivery[] = savedDeliveries ? JSON.parse(savedDeliveries) : [];
+    
+    const savedSuppliers = localStorage.getItem('app_suppliers');
+    const suppliers: Supplier[] = savedSuppliers ? JSON.parse(savedSuppliers) : [];
+
+    if (deliveries.length === 0 && suppliers.reduce((sum, s) => sum + s.totalOwed, 0) === 0) {
+      setShowMondayPrompt(false);
+      return;
+    }
+
+    // Previous week Monday to Sunday
+    const today = new Date();
+    const distanceToMonday = today.getDay() === 0 ? 6 : today.getDay() - 1;
+    const prevMonday = new Date(today);
+    prevMonday.setDate(today.getDate() - distanceToMonday - 7);
+    
+    const sunday = new Date(prevMonday);
+    sunday.setDate(prevMonday.getDate() + 6);
+    
+    const formatWeekDate = (d: Date) => {
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      return `${dd}-${mm}`;
+    };
+    
+    const weekRangeStr = `${formatWeekDate(prevMonday)} au ${formatWeekDate(sunday)}`;
+    const weekRangeFilename = `${formatWeekDate(prevMonday)}_au_${formatWeekDate(sunday)}`;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    let hasPages = false;
+
+    suppliers.forEach((supplier) => {
+      const supplierDeliveries = deliveries.filter(d => d.supplierId === supplier.id);
+      if (supplierDeliveries.length === 0 && supplier.totalOwed === 0) return;
+
+      if (hasPages) doc.addPage();
+      hasPages = true;
+
+      doc.setFontSize(22);
+      doc.setTextColor(30, 41, 59);
+      doc.text(`Facture / Rapport Hebdomadaire`, pageWidth / 2, 20, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Période : Semaine du ${weekRangeStr}`, pageWidth / 2, 28, { align: 'center' });
+
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(14, 38, pageWidth - 28, 30, 3, 3, 'FD');
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 41, 59);
+      doc.text(`Fournisseur: ${supplier.name}`, 20, 48);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Contact: ${supplier.contact || 'N/A'}`, 20, 56);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(239, 68, 68);
+      doc.text(`Montant Total Dû: ${supplier.totalOwed} DH`, 20, 64);
+
+      const tableData = supplierDeliveries.map(d => [
+        d.date,
+        d.label,
+        d.quantity,
+        `${d.totalPrice} DH`
+      ]);
+
+      autoTable(doc, {
+        startY: 75,
+        head: [['Date', 'Produit', 'Qté', 'Prix']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] },
+        styles: { fontSize: 10, cellPadding: 4 },
+        columnStyles: {
+          3: { halign: 'right', fontStyle: 'bold' }
+        }
+      });
+    });
+
+    if (hasPages) {
+      exportPDF(doc, `Toutes_Factures_Cloture_${weekRangeFilename}.pdf`);
+    }
+
+    // Archive deliveries
+    const savedArchive = localStorage.getItem('app_deliveries_archive');
+    const archived = savedArchive ? JSON.parse(savedArchive) : [];
+    localStorage.setItem('app_deliveries_archive', JSON.stringify([...archived, ...deliveries]));
+
+    // Reset debts and active deliveries
+    const updatedSuppliers = suppliers.map(s => ({ ...s, totalOwed: 0 }));
+    localStorage.setItem('app_suppliers', JSON.stringify(updatedSuppliers));
+    localStorage.setItem('app_deliveries', JSON.stringify([]));
+
+    localStorage.setItem('app_last_monday_prompt', today.toISOString().split('T')[0]);
+    setShowMondayPrompt(false);
+    window.location.reload();
+  };
+
+  const handleMondayCloseLater = () => {
+    localStorage.setItem('app_last_monday_prompt', new Date().toISOString().split('T')[0]);
+    setShowMondayPrompt(false);
+  };
 
   const currentMonthName = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
 
@@ -250,13 +384,33 @@ const Dashboard: React.FC = () => {
 
 
 
+  const handleExportWeeklyCSV = () => {
+    let csv = `Categorie;Montant (DH)\n`;
+    const weeklyFournisseurs = chartData.reduce((acc, curr) => acc + curr.Fournisseurs, 0);
+    const weeklyPersonnel = chartData.reduce((acc, curr) => acc + curr.Personnel, 0);
+    const weeklyRevenu = chartData.reduce((acc, curr) => acc + curr.Revenu, 0);
+    
+    csv += `Chiffre d'Affaires (Revenus);${weeklyRevenu}\n`;
+    csv += `Dépenses Fournisseurs;${weeklyFournisseurs}\n`;
+    csv += `Salaires du Personnel;${weeklyPersonnel}\n`;
+    csv += `Total Dépenses;${weeklyFournisseurs + weeklyPersonnel}\n`;
+    csv += `Bénéfice Net;${weeklyRevenu - weeklyFournisseurs - weeklyPersonnel}\n`;
+    
+    exportCSV(csv, `Rapport_Hebdomadaire_${new Date().toISOString().split('T')[0]}.csv`);
+  };
+
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">{t('dashboard.title')}</h1>
-        <button className="btn btn-primary" onClick={handleExport}>
-          <Download size={18} /> {t('dashboard.exportWeekly')}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-primary" onClick={handleExport}>
+            <Download size={18} /> {t('common.exportPDF')}
+          </button>
+          <button className="btn btn-outline" onClick={handleExportWeeklyCSV} style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+            <FileSpreadsheet size={18} /> {t('common.exportCSV')}
+          </button>
+        </div>
       </div>
 
       <div className="kpi-grid">
@@ -332,6 +486,26 @@ const Dashboard: React.FC = () => {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* MODAL: Monday Weekly Close Prompt */}
+      {showMondayPrompt && (
+        <div className="modal-overlay" style={{ zIndex: 2000 }}>
+          <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'center', padding: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--accent-primary)' }}>{t('suppliers.mondayResetTitle')}</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: '1.6' }}>
+              {t('suppliers.mondayResetMessage')}
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button className="btn btn-outline" onClick={handleMondayCloseLater}>
+                {t('suppliers.mondayResetLater')}
+              </button>
+              <button className="btn btn-primary" onClick={handleMondayCloseConfirm}>
+                {t('suppliers.mondayResetConfirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

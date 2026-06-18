@@ -8,6 +8,7 @@
     "reports": "Rapports & Bilan",
     "trash": "Corbeille",
     "security": "Sécurité",
+    "data": "Gestion des Données",
     "logout": "Déconnexion",
     "lightMode": "Mode Clair",
     "darkMode": "Mode Sombre"
@@ -24,7 +25,10 @@
     "label": "Libellé",
     "total": "Total",
     "actions": "Actions",
-    "close": "Fermer"
+    "close": "Fermer",
+    "exportCSV": "Exporter CSV",
+    "exportPDF": "Exporter PDF",
+    "download": "Télécharger"
   },
   "dashboard": {
     "title": "Tableau de Bord",
@@ -93,7 +97,15 @@
     "detteLabel": "Dette",
     "activeDeliveriesTitle": "Livraisons de la semaine en cours",
     "archivedDeliveriesTitle": "Historique archivé",
-    "closeBtn": "Fermer"
+    "closeBtn": "Fermer",
+    "filterMonth": "Filtrer par Mois/Année",
+    "allMonths": "Tous les mois",
+    "exportInvoice": "Exporter la Facture",
+    "debtLimitWarning": "Limite de crédit dépassée ({{limit}} DH) !",
+    "mondayResetTitle": "Clôture Hebdomadaire (Lundi)",
+    "mondayResetMessage": "C'est lundi ! Voulez-vous clôturer la semaine précédente ? Les livraisons en cours seront archivées, les dettes remises à 0, et un rapport PDF global de clôture sera téléchargé.",
+    "mondayResetConfirm": "Oui, Clôturer & Télécharger",
+    "mondayResetLater": "Plus tard"
   },
   "income": {
     "title": "Recettes (Caisse)",
@@ -125,7 +137,13 @@
     "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet employé ?",
     "paySuccess": "Paie de la semaine validée ! Total versé : {{total}} DH",
     "fillAllFields": "Veuillez remplir tous les champs.",
-    "save": "Sauvegarder"
+    "save": "Sauvegarder",
+    "paySlip": "Fiche de paie",
+    "paySlipTitle": "Fiche de Paie de l'Employé",
+    "paySlipDate": "Date de Paiement",
+    "paySlipWeeklySalary": "Salaire Hebdomadaire",
+    "paySlipStatus": "Statut de Paiement",
+    "paySlipSignature": "Signature Employeur"
   },
   "expenses": {
     "title": "Frais Fixes",
@@ -184,7 +202,10 @@
     "tableWeekPersonnel": "Personnel",
     "tableWeekNetProfit": "Bénéfice Net",
     "noWeeklyData": "Aucune donnée hebdomadaire enregistrée.",
-    "noWeeklyDataToast": "Aucune donnée hebdomadaire disponible."
+    "noWeeklyDataToast": "Aucune donnée hebdomadaire disponible.",
+    "monthHeader": "Mois de {{month}}",
+    "revenueWeekly": "Recettes de la semaine",
+    "expensesWeekly": "Dépenses de la semaine"
   },
   "trash": {
     "title": "Corbeille Globale",
@@ -236,5 +257,16 @@
     "errorIncorrectCurrent": "Le mot de passe actuel est incorrect.",
     "errorMinLength": "Le nouveau mot de passe doit contenir au moins 4 caractères.",
     "errorMismatch": "Le nouveau mot de passe et sa confirmation ne correspondent pas."
+  },
+  "dataManagement": {
+    "title": "Sauvegarde & Données",
+    "backupExplain": "Téléchargez un fichier contenant toutes les données de votre application (fournisseurs, livraisons, recettes, charges, personnel) pour les sauvegarder en lieu sûr.",
+    "restoreExplain": "Sélectionnez un fichier de sauvegarde (.json) précédemment exporté pour restaurer toutes vos données. Attention, cela écrasera définitivement les données actuelles.",
+    "backupBtn": "Sauvegarder les Données",
+    "restoreBtn": "Restaurer un fichier de sauvegarde",
+    "restoreSuccess": "Toutes les données ont été restaurées avec succès !",
+    "restoreError": "Échec de la restauration : Le fichier de sauvegarde est invalide ou corrompu.",
+    "confirmRestore": "Êtes-vous absolument sûr de vouloir restaurer cette sauvegarde ? L'état actuel de votre application sera écrasé.",
+    "selectFile": "Choisir un fichier de sauvegarde (.json)"
   }
 }

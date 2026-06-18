@@ -126,7 +126,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           <div className="login-logo-icon">
             <Coffee size={32} />
           </div>
-          <h1 className="login-brand">SmartCafe</h1>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <h1 className="login-brand" style={{ marginBottom: '0.2rem' }}>SmartCafe</h1>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.5px', opacity: 0.8 }}>by Oukadr</span>
+          </div>
         </div>
 
         {isRecovering ? (

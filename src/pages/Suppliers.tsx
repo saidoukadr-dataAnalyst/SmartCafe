@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportPDF } from '../pdfHelper';
-import { Plus, CheckCircle, Trash2, Edit2, ShoppingBag, Download } from 'lucide-react';
+import { exportCSV } from '../csvHelper';
+import { Plus, CheckCircle, Trash2, Edit2, ShoppingBag, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import { mockSuppliers, mockDeliveries } from '../mockData';
 import { moveToTrash } from '../trashHelper';
 import type { Supplier, Delivery } from '../types';
 import { useTranslation } from 'react-i18next';
+
 
 // Helper: format Date to local YYYY-MM-DD string without timezone shifting
 const formatDateLocal = (date: Date): string => {
@@ -16,8 +18,10 @@ const formatDateLocal = (date: Date): string => {
   return `${y}-${m}-${d}`;
 };
 
+const DEBT_LIMIT = 5000;
+
 const Suppliers: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
     const saved = localStorage.getItem('app_suppliers');
     return saved ? JSON.parse(saved) : mockSuppliers;
@@ -39,8 +43,7 @@ const Suppliers: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
   const [historySupplierId, setHistorySupplierId] = useState('');
   const [historySearchQuery, setHistorySearchQuery] = useState('');
-  const [historyStartDate, setHistoryStartDate] = useState('');
-  const [historyEndDate, setHistoryEndDate] = useState('');
+  const [historyMonthYear, setHistoryMonthYear] = useState(''); // YYYY-MM
 
   // Modals state
   const [showSupplierModal, setShowSupplierModal] = useState(false);
@@ -49,6 +52,17 @@ const Suppliers: React.FC = () => {
   const [showArchiveInModal, setShowArchiveInModal] = useState(false);
 
   const filteredSuppliers = suppliers.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  // Dynamically compute available months for select dropdown (YYYY-MM format)
+  const availableMonths = React.useMemo(() => {
+    const monthsSet = new Set<string>();
+    archivedDeliveries.forEach(d => {
+      if (d.date && d.date.length >= 7) {
+        monthsSet.add(d.date.slice(0, 7));
+      }
+    });
+    return Array.from(monthsSet).sort((a, b) => b.localeCompare(a));
+  }, [archivedDeliveries]);
 
   const getArchivedDeliveriesForSupplier = (supplierId: string) => {
     return archivedDeliveries.filter(d => d.supplierId === supplierId);
@@ -104,9 +118,8 @@ const Suppliers: React.FC = () => {
   const filteredHistory = archivedDeliveries.filter(d => {
     const matchSupplier = !historySupplierId || d.supplierId === historySupplierId;
     const matchSearch = !historySearchQuery || d.label.toLowerCase().includes(historySearchQuery.toLowerCase());
-    const matchStart = !historyStartDate || d.date >= historyStartDate;
-    const matchEnd = !historyEndDate || d.date <= historyEndDate;
-    return matchSupplier && matchSearch && matchStart && matchEnd;
+    const matchMonthYear = !historyMonthYear || (d.date && d.date.startsWith(historyMonthYear));
+    return matchSupplier && matchSearch && matchMonthYear;
   });
 
   const sortedFilteredHistory = [...filteredHistory].sort((a, b) => b.date.localeCompare(a.date));
@@ -169,22 +182,46 @@ const Suppliers: React.FC = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     
-    doc.setFontSize(22);
+    let titleSuffix = "";
+    let fileSuffix = "";
+    const filterDetails: string[] = [];
+
+    if (historySupplierId) {
+      const sName = getSupplierName(historySupplierId);
+      titleSuffix += ` - ${sName}`;
+      fileSuffix += `_${sName.replace(/\s+/g, '_')}`;
+      filterDetails.push(`Fournisseur: ${sName}`);
+    } else {
+      filterDetails.push("Fournisseur: Tous");
+    }
+    if (historyMonthYear) {
+      const [y, m] = historyMonthYear.split('-');
+      const dateObj = new Date(Number(y), Number(m) - 1, 1);
+      const monthLabel = dateObj.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      titleSuffix += ` - ${monthLabel}`;
+      fileSuffix += `_${m}_${y}`;
+      filterDetails.push(`Période: ${monthLabel}`);
+    } else {
+      filterDetails.push("Période: Toutes");
+    }
+    if (historySearchQuery) {
+      titleSuffix += ` - Recherche: "${historySearchQuery}"`;
+      fileSuffix += `_Rech_${historySearchQuery.replace(/\s+/g, '_')}`;
+      filterDetails.push(`Recherche: "${historySearchQuery}"`);
+    }
+
+    doc.setFontSize(titleSuffix ? 14 : 18);
     doc.setTextColor(30, 41, 59);
-    doc.text("Historique des Livraisons", pageWidth / 2, 20, { align: 'center' });
+    doc.text(`Historique des Livraisons${titleSuffix}`, pageWidth / 2, 20, { align: 'center' });
     
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(100, 116, 139);
     doc.text(`Généré le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 28, { align: 'center' });
     
-    let filterText = "Filtres : ";
-    if (historySupplierId) filterText += `Fournisseur: ${getSupplierName(historySupplierId)} | `;
-    if (historySearchQuery) filterText += `Rech: "${historySearchQuery}" | `;
-    if (historyStartDate || historyEndDate) filterText += `Période: ${historyStartDate || 'Début'} à ${historyEndDate || 'Fin'}`;
-    
-    doc.setFontSize(10);
+    const filterText = `Filtres actifs : ${filterDetails.join(' | ')}`;
+    doc.setFontSize(9);
     doc.setTextColor(100, 116, 139);
-    doc.text(filterText, pageWidth / 2, 36, { align: 'center' });
+    doc.text(filterText, pageWidth / 2, 35, { align: 'center' });
 
     const tableData = sortedFilteredHistory.map(d => [
       d.date,
@@ -227,7 +264,255 @@ const Suppliers: React.FC = () => {
     doc.setTextColor(59, 130, 246);
     doc.text(`${grandTotal} DH`, pageWidth - 20, finalY + 23, { align: 'right' });
 
-    exportPDF(doc, `Historique_Livraisons_Fournisseurs.pdf`);
+    exportPDF(doc, `Historique_Livraisons${fileSuffix || '_Fournisseurs'}.pdf`);
+  };
+
+  const handleExportHistoryCSV = () => {
+    let titleSuffix = "";
+    let fileSuffix = "";
+    const filterDetails: string[] = [];
+
+    if (historySupplierId) {
+      const sName = getSupplierName(historySupplierId);
+      titleSuffix += ` - ${sName}`;
+      fileSuffix += `_${sName.replace(/\s+/g, '_')}`;
+      filterDetails.push(`Fournisseur: ${sName}`);
+    } else {
+      filterDetails.push("Fournisseur: Tous");
+    }
+    if (historyMonthYear) {
+      const [y, m] = historyMonthYear.split('-');
+      const dateObj = new Date(Number(y), Number(m) - 1, 1);
+      const monthLabel = dateObj.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      titleSuffix += ` - ${monthLabel}`;
+      fileSuffix += `_${m}_${y}`;
+      filterDetails.push(`Période: ${monthLabel}`);
+    } else {
+      filterDetails.push("Période: Toutes");
+    }
+    if (historySearchQuery) {
+      titleSuffix += ` - Recherche: "${historySearchQuery}"`;
+      fileSuffix += `_Rech_${historySearchQuery.replace(/\s+/g, '_')}`;
+      filterDetails.push(`Recherche: "${historySearchQuery}"`);
+    }
+
+    let csv = `Historique des Livraisons${titleSuffix}\n`;
+    csv += `Généré le;${new Date().toLocaleDateString('fr-FR')}\n`;
+    const filterText = `Filtres actifs : ${filterDetails.join(' | ')}`;
+    csv += `Filtres;${filterText}\n\n`;
+    csv += `Date;Fournisseur;Produit / Label;Quantité;Prix (DH)\n`;
+    
+    sortedFilteredHistory.forEach(d => {
+      const supplierName = getSupplierName(d.supplierId).replace(/"/g, '""');
+      const label = d.label.replace(/"/g, '""');
+      csv += `${d.date};"${supplierName}";"${label}";${d.quantity};${d.totalPrice}\n`;
+    });
+    const grandTotal = sortedFilteredHistory.reduce((sum, d) => sum + Number(d.totalPrice), 0);
+    csv += `\nTotal (${sortedFilteredHistory.length} livraisons);;;;${grandTotal} DH\n`;
+    
+    exportCSV(csv, `Historique_Livraisons${fileSuffix || '_Fournisseurs'}.csv`);
+  };
+
+  const handleExportSuppliersPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    
+    doc.setFontSize(20);
+    doc.setTextColor(30, 41, 59);
+    doc.text("Liste des Fournisseurs & Dettes de la Semaine", pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(11);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Généré le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 27, { align: 'center' });
+
+    const tableData = suppliers.map(s => [
+      s.name,
+      s.contact || 'N/A',
+      `${s.totalOwed} DH`
+    ]);
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['Fournisseur', 'Contact / Tél', 'Montant Dû']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 10, cellPadding: 5 },
+      columnStyles: {
+        2: { halign: 'right', fontStyle: 'bold' }
+      }
+    });
+
+    const totalDette = suppliers.reduce((sum, s) => sum + s.totalOwed, 0);
+    interface jsPDFWithAutoTable extends jsPDF {
+      lastAutoTable?: {
+        finalY?: number;
+      };
+    }
+    const finalY = (doc as jsPDFWithAutoTable).lastAutoTable?.finalY || 100;
+
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(14, finalY + 10, pageWidth - 28, 16, 3, 3, 'FD');
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Montant Total Dû:`, 20, finalY + 20);
+    doc.setTextColor(239, 68, 68);
+    doc.text(`${totalDette} DH`, pageWidth - 20, finalY + 20, { align: 'right' });
+
+    exportPDF(doc, `Fournisseurs_Dettes_Semaine.pdf`);
+  };
+
+  const handleExportSuppliersCSV = () => {
+    let csv = `Fournisseur;Contact;Montant Du (DH)\n`;
+    suppliers.forEach(s => {
+      const name = s.name.replace(/"/g, '""');
+      const contact = s.contact.replace(/"/g, '""');
+      csv += `"${name}";"${contact}";${s.totalOwed}\n`;
+    });
+    const totalDette = suppliers.reduce((sum, s) => sum + s.totalOwed, 0);
+    csv += `\nTotal;;${totalDette} DH\n`;
+    
+    exportCSV(csv, `Fournisseurs_Dettes_Semaine.csv`);
+  };
+
+  const handleExportActiveDeliveriesPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    
+    doc.setFontSize(20);
+    doc.setTextColor(30, 41, 59);
+    doc.text("Détail des Livraisons Actives de la Semaine", pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(11);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Généré le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 27, { align: 'center' });
+
+    const tableData = deliveries.map(d => [
+      d.date,
+      getSupplierName(d.supplierId),
+      d.label,
+      d.quantity,
+      `${d.totalPrice} DH`
+    ]);
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['Date', 'Fournisseur', 'Produit', 'Qté', 'Prix']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 10, cellPadding: 5 },
+      columnStyles: {
+        4: { halign: 'right', fontStyle: 'bold' }
+      }
+    });
+
+    const totalActif = deliveries.reduce((sum, d) => sum + Number(d.totalPrice), 0);
+    interface jsPDFWithAutoTable extends jsPDF {
+      lastAutoTable?: {
+        finalY?: number;
+      };
+    }
+    const finalY = (doc as jsPDFWithAutoTable).lastAutoTable?.finalY || 100;
+
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(14, finalY + 10, pageWidth - 28, 16, 3, 3, 'FD');
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Total des Achats Actifs:`, 20, finalY + 20);
+    doc.setTextColor(239, 68, 68);
+    doc.text(`${totalActif} DH`, pageWidth - 20, finalY + 20, { align: 'right' });
+
+    exportPDF(doc, `Livraisons_Actives_Semaine.pdf`);
+  };
+
+  const handleExportActiveDeliveriesCSV = () => {
+    let csv = `Date;Fournisseur;Produit;Quantite;Prix (DH)\n`;
+    deliveries.forEach(d => {
+      const supplierName = getSupplierName(d.supplierId).replace(/"/g, '""');
+      const label = d.label.replace(/"/g, '""');
+      csv += `${d.date};"${supplierName}";"${label}";${d.quantity};${d.totalPrice}\n`;
+    });
+    const totalActif = deliveries.reduce((sum, d) => sum + Number(d.totalPrice), 0);
+    csv += `\nTotal;;;;${totalActif} DH\n`;
+    
+    exportCSV(csv, `Livraisons_Actives_Semaine.csv`);
+  };
+
+  const handleExportSupplierInvoicePDF = (supplier: Supplier) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Facture active`, pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Éditée le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 28, { align: 'center' });
+
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(14, 35, pageWidth - 28, 28, 3, 3, 'FD');
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Fournisseur : ${supplier.name}`, 20, 43);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Contact : ${supplier.contact || 'N/A'}`, 20, 50);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(239, 68, 68);
+    doc.text(`Montant dû : ${supplier.totalOwed} DH`, 20, 57);
+
+    const supplierDeliveries = getDeliveriesForSupplier(supplier.id);
+    const tableData = supplierDeliveries.map(d => [
+      d.date,
+      d.label,
+      d.quantity,
+      `${d.totalPrice} DH`
+    ]);
+
+    autoTable(doc, {
+      startY: 70,
+      head: [['Date', 'Produit', 'Quantité', 'Prix']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 10, cellPadding: 4 },
+      columnStyles: {
+        3: { halign: 'right', fontStyle: 'bold' }
+      }
+    });
+
+    exportPDF(doc, `Facture_${supplier.name.replace(/\s+/g, '_')}_EnCours.pdf`);
+  };
+
+  const handleExportSupplierInvoiceCSV = (supplier: Supplier) => {
+    const supplierDeliveries = getDeliveriesForSupplier(supplier.id);
+    let csv = `Facture active : ${supplier.name}\n`;
+    csv += `Contact : ${supplier.contact || 'N/A'}\n`;
+    csv += `Montant dû : ${supplier.totalOwed} DH\n\n`;
+    csv += `Date;Produit;Quantite;Prix (DH)\n`;
+    
+    supplierDeliveries.forEach(d => {
+      const label = d.label.replace(/"/g, '""');
+      csv += `${d.date};"${label}";${d.quantity};${d.totalPrice}\n`;
+    });
+    
+    exportCSV(csv, `Facture_${supplier.name.replace(/\s+/g, '_')}_EnCours.csv`);
   };
 
   const handleAddSupplier = () => {
@@ -479,15 +764,23 @@ const Suppliers: React.FC = () => {
 
       {activeTab === 'current' && (
         <div>
-          <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
+          <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
             <input 
               type="text" 
               placeholder={t('common.search')} 
               className="form-input"
-              style={{ maxWidth: '350px' }}
+              style={{ maxWidth: '350px', margin: 0 }}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-outline" onClick={handleExportSuppliersPDF} title="Exporter en PDF">
+                <Download size={16} /> {t('common.exportPDF')}
+              </button>
+              <button className="btn btn-outline" onClick={handleExportSuppliersCSV} title="Exporter en CSV">
+                <FileSpreadsheet size={16} /> {t('common.exportCSV')}
+              </button>
+            </div>
           </div>
 
           <div className="table-container">
@@ -505,7 +798,30 @@ const Suppliers: React.FC = () => {
                   <tr key={supplier.id}>
                     <td>{supplier.name}</td>
                     <td>{supplier.contact}</td>
-                    <td><strong style={{ color: supplier.totalOwed > 0 ? 'var(--danger)' : 'var(--success)' }}>{supplier.totalOwed} DH</strong></td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <strong style={{ color: supplier.totalOwed > 0 ? 'var(--danger)' : 'var(--success)' }}>{supplier.totalOwed} DH</strong>
+                        {supplier.totalOwed > DEBT_LIMIT && (
+                          <span 
+                            title={t('suppliers.debtLimitWarning', { limit: DEBT_LIMIT })}
+                            style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+                              color: 'var(--danger)', 
+                              padding: '0.15rem 0.4rem', 
+                              borderRadius: '4px', 
+                              fontSize: '0.65rem', 
+                              fontWeight: 700,
+                              gap: '2px'
+                            }}
+                          >
+                            <AlertTriangle size={10} />
+                            {t('suppliers.detteLabel')} !
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button 
@@ -573,9 +889,19 @@ const Suppliers: React.FC = () => {
 
           {/* Table of active deliveries of the week */}
           <div style={{ marginTop: '2.5rem' }}>
-            <h2 style={{ marginBottom: '1rem', fontSize: '1.3rem', fontWeight: 600 }}>
-              {t('suppliers.activeDeliveriesTitle')}
-            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 600 }}>
+                {t('suppliers.activeDeliveriesTitle')}
+              </h2>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-outline" onClick={handleExportActiveDeliveriesPDF} disabled={deliveries.length === 0} title="Exporter en PDF">
+                  <Download size={16} /> {t('common.exportPDF')}
+                </button>
+                <button className="btn btn-outline" onClick={handleExportActiveDeliveriesCSV} disabled={deliveries.length === 0} title="Exporter en CSV">
+                  <FileSpreadsheet size={16} /> {t('common.exportCSV')}
+                </button>
+              </div>
+            </div>
             <div className="table-container">
               <table className="table">
                 <thead>
@@ -704,23 +1030,20 @@ const Suppliers: React.FC = () => {
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">{t('suppliers.startDate')}</label>
-                <input 
-                  type="date" 
-                  className="form-input" 
-                  value={historyStartDate}
-                  onChange={e => setHistoryStartDate(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">{t('suppliers.endDate')}</label>
-                <input 
-                  type="date" 
-                  className="form-input" 
-                  value={historyEndDate}
-                  onChange={e => setHistoryEndDate(e.target.value)}
-                />
+                <label className="form-label">{t('suppliers.filterMonth')}</label>
+                <select 
+                  className="form-input"
+                  value={historyMonthYear}
+                  onChange={e => setHistoryMonthYear(e.target.value)}
+                >
+                  <option value="">{t('suppliers.allMonths')}</option>
+                  {availableMonths.map(my => {
+                    const [y, m] = my.split('-');
+                    const dateObj = new Date(Number(y), Number(m) - 1, 1);
+                    const monthLabel = dateObj.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR', { month: 'long', year: 'numeric' });
+                    return <option key={my} value={my}>{monthLabel}</option>;
+                  })}
+                </select>
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -730,8 +1053,7 @@ const Suppliers: React.FC = () => {
                   onClick={() => {
                     setHistorySupplierId('');
                     setHistorySearchQuery('');
-                    setHistoryStartDate('');
-                    setHistoryEndDate('');
+                    setHistoryMonthYear('');
                   }}
                 >
                   {t('common.cancel')}
@@ -741,10 +1063,15 @@ const Suppliers: React.FC = () => {
           </div>
 
           {/* Actions de l'historique */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-            <button className="btn btn-primary" onClick={handleExportHistoryPDF} disabled={sortedFilteredHistory.length === 0}>
-              <Download size={18} /> {t('suppliers.exportHistory')}
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-primary" onClick={handleExportHistoryPDF} disabled={sortedFilteredHistory.length === 0}>
+                <Download size={18} /> {t('common.exportPDF')}
+              </button>
+              <button className="btn btn-outline" onClick={handleExportHistoryCSV} disabled={sortedFilteredHistory.length === 0} style={{ borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }}>
+                <FileSpreadsheet size={18} /> {t('common.exportCSV')}
+              </button>
+            </div>
             {archivedDeliveries.length > 0 && (
               <button className="btn btn-danger" onClick={handleClearHistory}>
                 <Trash2 size={18} /> {t('suppliers.clearHistory')}
@@ -897,14 +1224,26 @@ const Suppliers: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {!showArchiveInModal ? (
-                <h3 style={{ color: 'var(--danger)' }}>{t('suppliers.totalAmountOwed')} : {selectedSupplier.totalOwed} DH</h3>
-              ) : (
-                <h3 style={{ color: 'var(--text-secondary)' }}>
-                  {t('suppliers.totalDette')} : {getArchivedDeliveriesForSupplier(selectedSupplier.id).reduce((sum, d) => sum + Number(d.totalPrice), 0)} DH
-                </h3>
-              )}
+            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                {!showArchiveInModal ? (
+                  <h3 style={{ color: 'var(--danger)', margin: 0 }}>{t('suppliers.totalAmountOwed')} : {selectedSupplier.totalOwed} DH</h3>
+                ) : (
+                  <h3 style={{ color: 'var(--text-secondary)', margin: 0 }}>
+                    {t('suppliers.totalDette')} : {getArchivedDeliveriesForSupplier(selectedSupplier.id).reduce((sum, d) => sum + Number(d.totalPrice), 0)} DH
+                  </h3>
+                )}
+                {!showArchiveInModal && getDeliveriesForSupplier(selectedSupplier.id).length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <button className="btn btn-outline" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={() => handleExportSupplierInvoicePDF(selectedSupplier)}>
+                      <Download size={12} /> {t('common.exportPDF')}
+                    </button>
+                    <button className="btn btn-outline" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} onClick={() => handleExportSupplierInvoiceCSV(selectedSupplier)}>
+                      <FileSpreadsheet size={12} /> {t('common.exportCSV')}
+                    </button>
+                  </div>
+                )}
+              </div>
               <button className="btn btn-outline" onClick={() => setSelectedSupplier(null)}>{t('suppliers.closeBtn')}</button>
             </div>
           </div>

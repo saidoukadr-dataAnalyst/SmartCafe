@@ -1,8 +1,9 @@
 import React from 'react';
-import { Download, CheckCircle } from 'lucide-react';
+import { Download, CheckCircle, ChevronDown, ChevronUp, FileSpreadsheet } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { exportPDF } from '../pdfHelper';
+import { exportCSV } from '../csvHelper';
 import { useTranslation } from 'react-i18next';
 import {
   BarChart,
@@ -189,6 +190,30 @@ const Reports: React.FC = () => {
     };
   }, []);
 
+  const weeksByMonth = React.useMemo(() => {
+    const groups = new Map<string, typeof weeklyDataState>();
+    weeklyDataState.forEach(w => {
+      const monthKey = w.sortKey.slice(0, 7); // e.g. "2026-06"
+      if (!groups.has(monthKey)) {
+        groups.set(monthKey, []);
+      }
+      groups.get(monthKey)!.push(w);
+    });
+    return Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [weeklyDataState]);
+
+  const [expandedMonths, setExpandedMonths] = React.useState<Record<string, boolean>>(() => {
+    if (weeksByMonth.length > 0) {
+      return { [weeksByMonth[0][0]]: true };
+    }
+    return {};
+  });
+
+  const toggleMonth = (monthKey: string) => {
+    setExpandedMonths(prev => ({ ...prev, [monthKey]: !prev[monthKey] }));
+  };
+
+
   const yearlyData = reportData.map(data => ({
     ...data,
     BeneficeNet: data.Revenu - (data.Fournisseurs + data.Personnel + data.FraisFixes)
@@ -308,15 +333,44 @@ const Reports: React.FC = () => {
     exportPDF(doc, `Historique_Hebdomadaire.pdf`);
   };
 
+  const handleExportMonthlyCSV = () => {
+    let csv = `Mois;Revenus (CA);Fournisseurs;Personnel;Frais Fixes;Total Depenses;Benefice Net\n`;
+    yearlyData.forEach(d => {
+      const monthName = getMonthTranslation(d.name);
+      const totalDep = d.Fournisseurs + d.Personnel + d.FraisFixes;
+      csv += `"${monthName}";${d.Revenu};${d.Fournisseurs};${d.Personnel};${d.FraisFixes};${totalDep};${d.Revenu - totalDep}\n`;
+    });
+    exportCSV(csv, `Rapport_Annuel_Mensuel.csv`);
+  };
+
+  const handleExportWeeklyCSV = () => {
+    if (weeklyDataState.length === 0) {
+      showToast(t('reports.noWeeklyDataToast'), "info");
+      return;
+    }
+    let csv = `Semaine;Revenus;Fournisseurs;Personnel;Benefice Net\n`;
+    weeklyDataState.forEach(w => {
+      const name = i18n.language === 'ar' ? w.nameAr : w.name;
+      csv += `"${name}";${w.Revenu};${w.Fournisseurs};${w.Personnel};${w.BeneficeNet}\n`;
+    });
+    exportCSV(csv, `Historique_Hebdomadaire.csv`);
+  };
+
+
   const currentMonthLocalizedName = getMonthTranslation(currentMonth.name);
 
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">{t('reports.title')}</h1>
-        <button className="btn btn-primary" onClick={handleExport}>
-          <Download size={18} /> {t('reports.exportMonthly')}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-primary" onClick={handleExport}>
+            <Download size={18} /> {t('common.exportPDF')}
+          </button>
+          <button className="btn btn-outline" onClick={handleExportMonthlyCSV} style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+            <FileSpreadsheet size={18} /> {t('common.exportCSV')}
+          </button>
+        </div>
       </div>
 
       <div className="kpi-grid">
@@ -415,45 +469,121 @@ const Reports: React.FC = () => {
         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>
           {t('reports.weeklyHistoryTitle')}
         </h2>
-        <button className="btn btn-outline" onClick={handleExportWeekly}>
-          <Download size={18} /> {t('reports.exportWeeklyHistory')}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-outline" onClick={handleExportWeekly}>
+            <Download size={18} /> {t('common.exportPDF')}
+          </button>
+          <button className="btn btn-outline" onClick={handleExportWeeklyCSV}>
+            <FileSpreadsheet size={18} /> {t('common.exportCSV')}
+          </button>
+        </div>
       </div>
 
-      <div className="table-container" style={{ marginTop: '1.5rem' }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{t('reports.tableWeek')}</th>
-              <th>{t('reports.tableWeekRevenues')}</th>
-              <th>{t('reports.tableWeekSuppliers')}</th>
-              <th>{t('reports.tableWeekPersonnel')}</th>
-              <th>{t('reports.tableWeekNetProfit')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {weeklyDataState.length > 0 ? weeklyDataState.map((week, idx) => {
-              const isPositive = week.BeneficeNet >= 0;
-              return (
-                <tr key={idx}>
-                  <td><strong>{i18n.language === 'ar' ? week.nameAr : week.name}</strong></td>
-                  <td style={{ color: 'var(--success)' }}>{week.Revenu} DH</td>
-                  <td>{week.Fournisseurs} DH</td>
-                  <td>{week.Personnel} DH</td>
-                  <td style={{ color: isPositive ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold' }}>
-                    {isPositive ? `+${week.BeneficeNet}` : week.BeneficeNet} DH
-                  </td>
-                </tr>
-              );
-            }) : (
-              <tr>
-                <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
-                  {t('reports.noWeeklyData')}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {weeksByMonth.length > 0 ? weeksByMonth.map(([monthKey, weeks]) => {
+          const isExpanded = expandedMonths[monthKey];
+          const [year, month] = monthKey.split('-');
+          const dateObj = new Date(Number(year), Number(month) - 1, 1);
+          const monthName = dateObj.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'fr-FR', { month: 'long', year: 'numeric' });
+          
+          // Calculate month totals for the weeks in this month
+          const totalRev = weeks.reduce((sum, w) => sum + w.Revenu, 0);
+          const totalFourn = weeks.reduce((sum, w) => sum + w.Fournisseurs, 0);
+          const totalPers = weeks.reduce((sum, w) => sum + w.Personnel, 0);
+          const totalNet = totalRev - (totalFourn + totalPers);
+
+          return (
+            <div key={monthKey} style={{
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-lg)',
+              overflow: 'hidden',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              {/* Header Row */}
+              <div 
+                onClick={() => toggleMonth(monthKey)}
+                style={{
+                  padding: '1rem 1.5rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  backgroundColor: isExpanded ? 'rgba(59, 130, 246, 0.04)' : 'transparent',
+                  borderBottom: isExpanded ? '1px solid var(--border-color)' : 'none',
+                  transition: 'background-color 0.2s ease',
+                  flexWrap: 'wrap',
+                  gap: '1rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  {isExpanded ? <ChevronUp size={20} style={{ color: 'var(--accent-primary)' }} /> : <ChevronDown size={20} style={{ color: 'var(--text-secondary)' }} />}
+                  <span style={{ fontSize: '1.1rem', fontWeight: 700, textTransform: 'capitalize' }}>{monthName}</span>
+                </div>
+                
+                {/* Quick summary metrics */}
+                <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', flexWrap: 'wrap' }}>
+                  <span>
+                    {t('reports.revenueMonth', { month: '' }).split('(')[0]} : <strong style={{ color: 'var(--success)' }}>{totalRev} DH</strong>
+                  </span>
+                  <span>
+                    {t('reports.totalExpensesMonth', { month: '' }).split('(')[0]} : <strong style={{ color: 'var(--danger)' }}>{totalFourn + totalPers} DH</strong>
+                  </span>
+                  <span>
+                    {t('reports.netProfitMonth', { month: '' }).split('(')[0]} : <strong style={{ color: totalNet >= 0 ? 'var(--success)' : 'var(--danger)' }}>{totalNet} DH</strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Table Container */}
+              {isExpanded && (
+                <div className="table-container" style={{ margin: 0, border: 'none', borderRadius: 0 }}>
+                  <table className="table" style={{ border: 'none' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                        <th style={{ paddingInlineStart: '2.5rem' }}>{t('reports.tableWeek')}</th>
+                        <th>{t('reports.tableWeekRevenues')}</th>
+                        <th>{t('reports.tableWeekSuppliers')}</th>
+                        <th>{t('reports.tableWeekPersonnel')}</th>
+                        <th>{t('reports.tableWeekNetProfit')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {weeks.map((week, idx) => {
+                        const isPositive = week.BeneficeNet >= 0;
+                        return (
+                          <tr key={idx}>
+                            <td style={{ paddingInlineStart: '2.5rem' }}>
+                              <strong>{i18n.language === 'ar' ? week.nameAr : week.name}</strong>
+                            </td>
+                            <td style={{ color: 'var(--success)' }}>{week.Revenu} DH</td>
+                            <td>{week.Fournisseurs} DH</td>
+                            <td>{week.Personnel} DH</td>
+                            <td style={{ color: isPositive ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold' }}>
+                              {isPositive ? `+${week.BeneficeNet}` : week.BeneficeNet} DH
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        }) : (
+          <div style={{
+            textAlign: 'center',
+            padding: '3rem',
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-lg)',
+            color: 'var(--text-secondary)'
+          }}>
+            {t('reports.noWeeklyData')}
+          </div>
+        )}
       </div>
 
       {/* TOAST NOTIFICATION */}

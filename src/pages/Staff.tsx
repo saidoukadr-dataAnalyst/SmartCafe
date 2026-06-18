@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, CheckCircle, Trash2, Edit2 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { exportPDF } from '../pdfHelper';
+import { exportCSV } from '../csvHelper';
+import { Plus, CheckCircle, Trash2, Edit2, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import { mockEmployees } from '../mockData';
 import { moveToTrash } from '../trashHelper';
 import type { Employee } from '../types';
@@ -107,16 +111,168 @@ const Staff: React.FC = () => {
     }
   };
 
+  const handleExportStaffPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text("Liste du Personnel & Salaires", pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Généré le : ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, 28, { align: 'center' });
+
+    const tableData = employees.map(e => [
+      e.name,
+      e.role,
+      `${e.weeklySalary} DH`,
+      getStatusTranslation(e.status)
+    ]);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [['Nom Complet', 'Rôle / Poste', 'Salaire Hebdomadaire', 'Statut de Paiement']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] },
+      styles: { fontSize: 10, cellPadding: 5 },
+      columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'center', fontStyle: 'bold' }
+      }
+    });
+
+    const totalWeekly = employees.reduce((sum, e) => sum + e.weeklySalary, 0);
+    interface jsPDFWithAutoTable extends jsPDF {
+      lastAutoTable?: {
+        finalY?: number;
+      };
+    }
+    const finalY = (doc as jsPDFWithAutoTable).lastAutoTable?.finalY || 100;
+
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(14, finalY + 10, pageWidth - 28, 16, 3, 3, 'FD');
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Total Salaires Hebdomadaires:`, 20, finalY + 20);
+    doc.setTextColor(59, 130, 246);
+    doc.text(`${totalWeekly} DH`, pageWidth - 20, finalY + 20, { align: 'right' });
+
+    exportPDF(doc, `Personnel_Salaires.pdf`);
+  };
+
+  const handleExportStaffCSV = () => {
+    let csv = `Nom Complet;Role;Salaire Hebdomadaire (DH);Statut de Paiement\n`;
+    employees.forEach(e => {
+      const name = e.name.replace(/"/g, '""');
+      const role = e.role.replace(/"/g, '""');
+      const status = getStatusTranslation(e.status);
+      csv += `"${name}";"${role}";${e.weeklySalary};"${status}"\n`;
+    });
+    const totalWeekly = employees.reduce((sum, e) => sum + e.weeklySalary, 0);
+    csv += `\nTotal;;${totalWeekly} DH\n`;
+    
+    exportCSV(csv, `Personnel_Salaires.csv`);
+  };
+
+  const handleExportPaySlip = (employee: Employee) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text(t('staff.paySlipTitle'), pageWidth / 2, 25, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`SmartCafe`, pageWidth / 2, 33, { align: 'center' });
+
+    // Decorative Line
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(1);
+    doc.line(14, 40, pageWidth - 14, 40);
+
+    // Metadata Table
+    autoTable(doc, {
+      startY: 50,
+      body: [
+        [t('staff.name'), employee.name],
+        [t('staff.role'), employee.role],
+        [t('staff.weeklySalary'), `${employee.weeklySalary} DH`],
+        [t('staff.paySlipDate'), new Date().toLocaleDateString('fr-FR')],
+        [t('staff.paymentStatus'), getStatusTranslation(employee.status)]
+      ],
+      theme: 'grid',
+      styles: { fontSize: 11, cellPadding: 6 },
+      columnStyles: {
+        0: { fontStyle: 'bold', textColor: [100, 116, 139], cellWidth: 60 },
+        1: { textColor: [30, 41, 59] }
+      }
+    });
+
+    interface jsPDFWithAutoTable extends jsPDF {
+      lastAutoTable?: {
+        finalY?: number;
+      };
+    }
+    const finalY = (doc as jsPDFWithAutoTable).lastAutoTable?.finalY || 110;
+
+    // Paid Stamp
+    const isPaid = (employee.status || 'En attente') === 'Payé';
+    if (isPaid) {
+      doc.setFillColor(240, 253, 244);
+      doc.setDrawColor(74, 222, 128);
+      doc.setLineWidth(1);
+      doc.roundedRect(pageWidth - 70, finalY + 15, 56, 18, 2, 2, 'FD');
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(22, 163, 74);
+      doc.text(t('staff.paid').toUpperCase(), pageWidth - 42, finalY + 27, { align: 'center' });
+    } else {
+      doc.setFillColor(255, 251, 235);
+      doc.setDrawColor(251, 191, 36);
+      doc.setLineWidth(1);
+      doc.roundedRect(pageWidth - 70, finalY + 15, 56, 18, 2, 2, 'FD');
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(217, 119, 6);
+      doc.text(t('staff.pending').toUpperCase(), pageWidth - 42, finalY + 27, { align: 'center' });
+    }
+
+    // Signature Area
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text(t('staff.paySlipSignature'), 25, finalY + 30);
+    doc.line(25, finalY + 50, 75, finalY + 50);
+
+    exportPDF(doc, `Fiche_de_paie_${employee.name.replace(/\s+/g, '_')}.pdf`);
+  };
+
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">{t('staff.title')}</h1>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button className="btn btn-outline" onClick={() => { resetForm(); setShowModal(true); }}>
             <Plus size={18} /> {t('staff.addEmployee')}
           </button>
           <button className="btn btn-primary" onClick={handleValidationPaie}>
             <CheckCircle size={18} /> {t('staff.validatePay')}
+          </button>
+          <button className="btn btn-outline" onClick={handleExportStaffPDF} title="Exporter en PDF">
+            <Download size={18} /> PDF
+          </button>
+          <button className="btn btn-outline" onClick={handleExportStaffCSV} title="Exporter en CSV">
+            <FileSpreadsheet size={18} /> CSV
           </button>
         </div>
       </div>
@@ -149,6 +305,14 @@ const Staff: React.FC = () => {
                     }}>
                       {getStatusTranslation(employee.status)}
                     </span>
+                    <button 
+                      className="btn btn-outline"
+                      onClick={() => handleExportPaySlip(employee)}
+                      title={t('staff.paySlip')}
+                      style={{ padding: '0.25rem 0.5rem', color: 'var(--accent-primary)', borderColor: 'rgba(59, 130, 246, 0.2)' }}
+                    >
+                      <FileText size={14} />
+                    </button>
                     <button 
                       className="btn btn-outline"
                       onClick={() => handleEditEmployee(employee)}
